@@ -1,0 +1,79 @@
+{
+  "name": "@getmcpads/meta-ads-mcp-server",
+  "version": "1.0.0",
+  "description": "Open-source MCP server for the Meta (Facebook & Instagram) Ads Marketing API. 34 read tools and 10 write tools that preview before they apply, 190 metrics, 56 breakdowns. Self-hosted, bring your own token.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "meta-ads-mcp": "dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsx watch src/cli.ts",
+    "doctor": "node scripts/doctor.mjs",
+    "start": "node dist/cli.js",
+    "test": "tsx --test test/*.test.mjs",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@types/node": "^22.0.0",
+    "eslint": "^9.0.0",
+    "globals": "^15.0.0",
+    "tsup": "^8.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.7.0",
+    "typescript-eslint": "^8.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "dist/",
+    "LICENSE",
+    "NOTICE",
+    "README.md"
+  ],
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "facebook-ads",
+    "meta-ads",
+    "instagram-ads",
+    "meta-marketing-api",
+    "graph-api",
+    "advertising",
+    "marketing-analytics",
+    "claude",
+    "chatgpt",
+    "cursor",
+    "ai-agent"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/getmcpads-com/meta-ads-mcp-server.git"
+  },
+  "homepage": "https://github.com/getmcpads-com/meta-ads-mcp-server#readme",
+  "bugs": {
+    "url": "https://github.com/getmcpads-com/meta-ads-mcp-server/issues"
+  },
+  "author": "GetMCPAds (https://www.getmcpads.com)",
+  "publishConfig": {
+    "access": "public"
+  }
+}
