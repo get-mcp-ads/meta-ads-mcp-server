@@ -1,6 +1,7 @@
 {
   "name": "@getmcpads/meta-ads-mcp-server",
-  "version": "1.0.0",
+  "version": "1.0.1",
+  "mcpName": "com.getmcpads/meta-ads",
   "description": "Open-source MCP server for the Meta (Facebook & Instagram) Ads Marketing API. 34 read tools and 10 write tools that preview before they apply, 190 metrics, 56 breakdowns. Self-hosted, bring your own token.",
   "license": "Apache-2.0",
   "type": "module",
@@ -68,7 +69,7 @@
     "type": "git",
     "url": "git+https://github.com/getmcpads-com/meta-ads-mcp-server.git"
   },
-  "homepage": "https://github.com/getmcpads-com/meta-ads-mcp-server#readme",
+  "homepage": "https://www.getmcpads.com/tools/meta-ads",
   "bugs": {
     "url": "https://github.com/getmcpads-com/meta-ads-mcp-server/issues"
   },

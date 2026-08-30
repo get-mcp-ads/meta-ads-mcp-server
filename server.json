@@ -1,0 +1,43 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "com.getmcpads/meta-ads",
+  "title": "Meta Ads",
+  "description": "Meta (Facebook and Instagram) Ads: 34 read tools and 10 write tools that preview first.",
+  "version": "1.0.1",
+  "websiteUrl": "https://www.getmcpads.com/tools/meta-ads",
+  "repository": {
+    "url": "https://github.com/getmcpads-com/meta-ads-mcp-server",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@getmcpads/meta-ads-mcp-server",
+      "version": "1.0.1",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "META_ACCESS_TOKEN",
+          "description": "Meta access token with at least the ads_read permission.",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "META_ENABLE_WRITES",
+          "description": "Set to 1 to register the 10 write tools. They need ads_management.",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "META_API_VERSION",
+          "description": "Graph API version. Defaults to v26.0.",
+          "isRequired": false,
+          "isSecret": false
+        }
+      ]
+    }
+  ]
+}

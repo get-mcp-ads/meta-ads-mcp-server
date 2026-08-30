@@ -55,9 +55,9 @@ test("README tool counts match reality", async () => {
   const writes = tools.filter((t) => /^meta_(create|update|rename)_/.test(t));
   const reads = tools.filter((t) => !writes.includes(t));
 
-  assert.equal(reads.length, 34, "read tool count changed — update the README");
-  assert.equal(writes.length, 10, "write tool count changed — update the README");
-  assert.equal(resources.length, 7, "resource count changed — update the README");
+  assert.equal(reads.length, 34, "read tool count changed, update the README");
+  assert.equal(writes.length, 10, "write tool count changed, update the README");
+  assert.equal(resources.length, 7, "resource count changed, update the README");
 
   assert.match(README, new RegExp(`\\*\\*${reads.length} read tools\\*\\*`));
   assert.match(README, new RegExp(`\\*\\*${writes.length} write tools\\*\\*`));
