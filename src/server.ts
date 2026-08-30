@@ -8,7 +8,7 @@ import type { ServerConfig } from "./config/types.js";
 import { registerMeta } from "./platforms/meta/index.js";
 import { logger } from "./core/logger.js";
 
-export const PACKAGE_VERSION = "1.0.0";
+export const PACKAGE_VERSION = "1.0.2";
 
 /**
  * Create and configure the MCP server.

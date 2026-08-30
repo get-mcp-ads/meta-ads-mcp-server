@@ -50,3 +50,12 @@ test("every declared environment variable is documented in .env.example", () => 
   const undocumented = declared.filter((name) => !env.includes(name));
   assert.deepEqual(undocumented, [], `Declared in server.json but absent from .env.example: ${undocumented}`);
 });
+
+test("the version the server announces matches the package", () => {
+  // PACKAGE_VERSION is a literal in src/server.ts, so nothing stops a release
+  // from bumping package.json and leaving the handshake announcing the old
+  // number. A client reading the version would then be told something false.
+  const source = readFileSync(new URL("../src/server.ts", import.meta.url), "utf8");
+  const announced = source.match(/PACKAGE_VERSION = "([0-9]+\.[0-9]+\.[0-9]+)"/)?.[1];
+  assert.equal(announced, pkg.version, "src/server.ts and package.json disagree on the version");
+});

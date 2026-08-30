@@ -1,6 +1,6 @@
 {
   "name": "@getmcpads/meta-ads-mcp-server",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "mcpName": "com.getmcpads/meta-ads",
   "description": "Open-source MCP server for the Meta (Facebook & Instagram) Ads Marketing API. 34 read tools and 10 write tools that preview before they apply, 190 metrics, 56 breakdowns. Self-hosted, bring your own token.",
   "license": "Apache-2.0",
