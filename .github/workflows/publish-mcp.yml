@@ -58,5 +58,19 @@ jobs:
       - name: Authenticate with the getmcpads.com domain
         run: ./mcp-publisher login dns --domain getmcpads.com --private-key "${{ secrets.MCP_DNS_PRIVATE_KEY }}"
 
-      - name: Publish
-        run: ./mcp-publisher publish
+      - name: Publish, unless this version is already listed
+        run: |
+          NAME=$(node -p "require('./server.json').name")
+          VERSION=$(node -p "require('./server.json').version")
+          LISTED=$(curl -sf "https://registry.modelcontextprotocol.io/v0/servers?search=$NAME" \
+            | node -e "
+              let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{
+                const servers=(JSON.parse(s).servers||[]);
+                const hit=servers.some(x=>(x.server||x).name==='$NAME'&&(x.server||x).version==='$VERSION');
+                console.log(hit?'yes':'no');
+              })" || echo "no")
+          if [ "$LISTED" = "yes" ]; then
+            echo "$NAME $VERSION is already in the registry. Nothing to do."
+            exit 0
+          fi
+          ./mcp-publisher publish
