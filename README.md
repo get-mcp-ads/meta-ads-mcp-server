@@ -51,17 +51,17 @@ one that returns your numbers.
 Meta ships an official MCP server, hosted at `mcp.facebook.com/ads`. It is a good product.
 Here is an honest comparison, because the right choice depends on what you need.
 
-| | Meta's official server | This server | [getmcpads.com](https://www.getmcpads.com) |
+| | **This server** | Meta's official server | [getmcpads.com](https://www.getmcpads.com) |
 |---|---|---|---|
-| Hosting | Meta-hosted, remote | **You host it.** stdio, local process | Hosted for you |
-| Data path | Through Meta's endpoint | **Direct to the Graph API.** No intermediary | Through our gateway |
-| Auth | Meta Business OAuth, 2 clicks | You bring a token, which is more setup (see below) | Hosted OAuth |
-| Tools | 29 | **44** (34 read + 10 write) | 44, plus 5 other platforms |
-| Writes | Applied directly | **Preview first**, applied only on `confirm: true` | Preview first |
-| Metric compatibility | None | **Query planner splits incompatible requests** | Same planner |
-| Auditable | No | **Yes.** Apache-2.0, read every line | This server, audited |
-| Modifiable | No | **Fork it** | No |
-| Help Center search | ✅ | ❌ | ❌ |
+| Hosting | **You host it.** stdio, local process | Meta-hosted, remote | Hosted for you |
+| Data path | **Direct to the Graph API.** No intermediary | Through Meta's endpoint | Through our gateway |
+| Auth | You bring a token, which is more setup (see below) | Meta Business OAuth, 2 clicks | Hosted OAuth |
+| Tools | **44** (34 read + 10 write) | 29 | 44, plus 5 other platforms |
+| Writes | **Preview first**, applied only on `confirm: true` | Applied directly | Preview first |
+| Metric compatibility | **Query planner splits incompatible requests** | None | Same planner |
+| Auditable | **Yes.** Apache-2.0, read every line | No | This server, audited |
+| Modifiable | **Fork it** | No | No |
+| Help Center search | **No** | Yes | No |
 | Catalog creation | ✅ | ❌ (catalog *reads* are supported) | ❌ |
 
 **Choose Meta's** if you want the fastest possible setup and don't need to see the code.
