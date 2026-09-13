@@ -28,8 +28,8 @@ Also listed in the [MCP Registry](https://registry.modelcontextprotocol.io) as *
 
 | | |
 |---|---|
-| **34 read tools** | Campaigns, ad sets, ads, creatives, audiences, pixels, catalogs, Pages, Instagram, activity logs, A/B tests and lift studies |
-| **10 write tools** | Off by default. Status, budgets, schedules, renames, campaign creation. Each one **previews before it applies** |
+| **39 read tools** | Campaigns, ad sets, ads, creatives, audiences, pixels, catalogs, Pages, Instagram, activity logs, A/B tests and lift studies |
+| **23 write tools** | Off by default. Status, budgets, schedules, renames, campaign creation. Each one **previews before it applies** |
 | **190 metrics** | Including derived ones computed client-side (ROAS, CPA, frequency, hook rate, attribution-window views) |
 | **56 breakdowns · 90 dimensions** | With a compatibility matrix that catches invalid combinations *before* they hit the API |
 | **7 resources** | Live catalogues the model can read: metrics, breakdowns, compatibility rules, 11 workflow recipes |
@@ -365,3 +365,43 @@ Please read [SECURITY.md](SECURITY.md) before reporting anything security-relate
 Facebook, Meta, Instagram and the Meta Marketing API are trademarks of Meta Platforms, Inc.
 **This project is not affiliated with, endorsed by, or sponsored by Meta Platforms, Inc.**
 It is an independent client of a public API.
+
+## Version 1.1: platform updates and MCP contracts
+
+Every tool now declares read/write annotations, parameter descriptions and a structured output schema. Successful calls retain their original text and expose the same payload as `structuredContent.result`; provider fields depend on the selected report. Errors retain `isError: true`. The generated [server card](server-card.json) contains definitions only, with no account credentials.
+
+Writes remain disabled unless the platform-specific `ENABLE_WRITES` setting is enabled. Read the exact tool schema before calling: operations can require the owning account, currency, native configuration or a matching preview hash. Calls preview by default; applying a change requires `confirm: true`. A provider timeout can leave the outcome unknown: reconcile the account before retrying a creation or upload.
+
+Additional tools included in this release:
+
+| Tool | Purpose |
+| --- | --- |
+| `meta_list_ad_images` | List the ad account image library (/adimages): hash, name, dimensions, status, a permanent publicly served display URL (permalink_url), short-lived CDN URLs, and optionally the creatives using each image.. |
+| `meta_list_ad_videos` | List the ad account video library (/advideos): title, duration, processing status, and publicly served thumbnails (preferred and largest sizes). |
+| `meta_get_video_sources` | Resolve fresh download URLs (source) and thumbnails for specific ad videos. |
+| `meta_get_adset_configuration` | Read an existing ad set, its parent campaign budget/objective and account currency before preparing an edit. |
+| `meta_get_catalog_batch_status` | Read the completion and per-item errors for a catalog batch handle. |
+| `meta_create_adset` | Create a PAUSED Meta ad set with explicit targeting, optimization, placements, attribution, bidding and schedule. |
+| `meta_update_adset_configuration` | Update targeting, optimization, placements, attribution, bidding, budget or schedule. |
+| `meta_duplicate_adset` | Duplicate a known-good ad set within the selected account, preserving complex native configuration. |
+| `meta_create_adcreative` | Create an ad creative from an existing post or an explicit object_story_spec and optional asset_feed_spec. |
+| `meta_create_ad` | Create a PAUSED ad using an existing ad set and creative from the selected account. |
+| `meta_update_ad_creative` | Replace an ad’s creative with another existing creative from the same account. |
+| `meta_upload_ad_image` | Upload an image into the selected ad account using base64 bytes (up to 5 MiB decoded). |
+| `meta_upload_ad_video` | Import a video from a publicly reachable HTTPS URL or base64 MP4 bytes (up to 5 MiB decoded). |
+| `meta_create_custom_audience` | Create a website, engagement, customer-list container or lookalike audience. |
+| `meta_update_custom_audience` | Update an existing custom audience name, description, retention or complete rule. |
+| `meta_create_product_set` | Create a filtered product set in a catalog owned by the same Business as the selected ad account. |
+| `meta_update_product_set` | Replace a product set filter or rename it. |
+| `meta_batch_catalog_items` | Create or update up to 50 catalog products by retailer_id. |
+| `meta_update_adset_status` | Pause or reactivate a Meta ad set. |
+| `meta_update_ad_status` | Pause or reactivate a Meta ad. |
+| `meta_update_adset_budget` | Change the daily or lifetime budget of a Meta ad set. |
+| `meta_rename_adset` | Rename a Meta ad set. |
+| `meta_rename_ad` | Rename a Meta ad. |
+
+The hosted GetMCPAds service additionally provides OAuth account selection and interactive review workspaces. Local servers use your own platform credentials and return native report data and media references.
+
+### Desktop bundle
+
+Run `npm run bundle -- /path/to/output` to build a `.mcpb` desktop bundle from the current catalogue. The bundle contains production dependencies, documented local configuration, and complete tool definitions. Provider credentials are entered locally during installation; write tools remain disabled unless explicitly enabled.

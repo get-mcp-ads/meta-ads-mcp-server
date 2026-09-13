@@ -3,7 +3,11 @@
  * Copyright 2026 GetMCPAds. https://www.getmcpads.com
  * SPDX-License-Identifier: Apache-2.0
  */
+import { reportingEvidence, measurementParams } from "./reporting-context.js";
 import { z } from "zod";
+import { getBusinessAssets } from "./business-assets.js";
+import { instagramInsightMetrics } from "./organic-insights.js";
+import { metaCreativeMedia, metaImageFileUrl } from "./creative-media.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { MetaApiException, MetaClient } from "./client.js";
 import { validateQuerySelection } from "./compatibility-rules.js";
@@ -19,7 +23,7 @@ const levelSchema = z.enum(["account", "campaign", "adset", "ad"]);
 const statusFilterSchema = z
   .enum(["ACTIVE", "PAUSED", "DELETED", "ARCHIVED"])
   .optional()
-  .describe("Filter by entity status");
+  .describe("Filter by native effective_status, not configured status. PAUSED excludes IN_PROCESS, CAMPAIGN_PAUSED and ADSET_PAUSED. Omit for post-creation verification and inspect both returned status fields.");
 const limitSchema = z.number().int().min(1).max(500).optional().default(100);
 const cursorSchema = z.string().optional().describe("Pagination cursor from previous response");
 const productBreakdownSchema = z.enum([
@@ -242,9 +246,42 @@ async function fetchGraphWithFallback(
   }
 }
 
+function pageClientResolver(client: MetaClient, warnings: MetaWarning[]) {
+  const pageClients = new Map<string, MetaClient | null>();
+  const pageClientFor = async (id: string): Promise<MetaClient | null> => {
+    if (!pageClients.has(id)) {
+      const result = await fetchGraph(client, "organic_page_token", graphUrl(client, `/${encodeURIComponent(id)}`, {fields: "access_token"}), warnings,
+        "Grant pages_show_list/pages_read_engagement and access to this Page, then reconnect Meta if necessary.");
+      const token = typeof result?.access_token === "string" ? result.access_token : undefined;
+      pageClients.set(id, token ? new MetaClient(token, client.apiVersion) : null);
+      if (result && !token) warnings.push({area: "organic_page_token", message: "Meta did not return a Page access token.", suggestion: "Verify this user's Page tasks and reconnect Meta. No user token is substituted for a Page token."});
+    }
+    return pageClients.get(id) ?? null;
+  };
+  return pageClientFor;
+}
+
 function dataArray(result: Record<string, unknown> | null): Record<string, unknown>[] {
   const data = result?.data;
   return Array.isArray(data) ? data.filter(isRecord) : [];
+}
+
+function entityListResult(result: Record<string, unknown>, statusFilter?: string) {
+  return {
+    ...result,
+    coverage: {
+      scope: "returned_page",
+      returned_count: dataArray(result).length,
+      has_more: !!(isRecord(result.paging) && result.paging.next),
+      status_filter_field: statusFilter ? "effective_status" : null,
+      status_filter: statusFilter ?? null,
+    },
+    notes: [
+      "Follow paging.cursors.after while paging.next is present. A limited or filtered listing does not prove that an object does not exist.",
+      "status is configured status; effective_status can differ during processing or due to a paused parent. Omit statusFilter when verifying a newly created object.",
+      "An empty listing alone does not establish indexing lag or its cause. Read known campaign IDs with meta_get_campaign_structure.",
+    ],
+  };
 }
 
 function pagingInfo(result: Record<string, unknown> | null): unknown {
@@ -261,6 +298,40 @@ function pictureUrl(value: unknown): string | undefined {
   }
 
   return undefined;
+}
+
+function thumbnailSummary(value: Record<string, unknown> | undefined): Record<string, unknown> | undefined {
+  if (!value || typeof value.uri !== "string") return undefined;
+  return { uri: value.uri, width: value.width, height: value.height };
+}
+
+function normalizeAdVideo(video: Record<string, unknown>, includeSource: boolean): Record<string, unknown> {
+  const status = isRecord(video.status) ? video.status : undefined;
+  const thumbnailEdge = isRecord(video.thumbnails) ? video.thumbnails.data : undefined;
+  const thumbnails = Array.isArray(thumbnailEdge) ? thumbnailEdge.filter(isRecord) : [];
+  const preferred = thumbnails.find((thumb) => thumb.is_preferred === true) ?? thumbnails[0];
+  let largest: Record<string, unknown> | undefined;
+  for (const thumb of thumbnails) {
+    if (!largest || (Number(thumb.width) || 0) > (Number(largest.width) || 0)) largest = thumb;
+  }
+
+  const from = isRecord(video.from) ? video.from : undefined;
+
+  return {
+    id: video.id,
+    title: video.title,
+    video_status: typeof status?.video_status === "string" ? status.video_status : undefined,
+    duration_seconds: typeof video.length === "number" ? video.length : undefined,
+    owner: from ? { id: from.id, name: from.name } : undefined,
+    created_time: video.created_time,
+    updated_time: video.updated_time,
+    picture: video.picture,
+    permalink_url: video.permalink_url,
+    thumbnail_preferred: thumbnailSummary(preferred),
+    thumbnail_largest: thumbnailSummary(largest),
+    thumbnail_count: thumbnails.length,
+    ...(includeSource ? { source: video.source } : {}),
+  };
 }
 
 function addById(
@@ -368,6 +439,7 @@ function normalizeCreativeAsset(
   const templateData = isRecord(spec.template_data) ? spec.template_data : undefined;
 
   return {
+    ...(() => { const media = metaCreativeMedia(creative); return { creative_format: media.format, media: media.media }; })(),
     source_type: sourceType,
     ad_id: sourceType === "ad" ? source.id : undefined,
     ad_name: sourceType === "ad" ? source.name : undefined,
@@ -753,6 +825,7 @@ function normalizeInstagramMedia(media: Record<string, unknown>): Record<string,
     id: media.id,
     caption: media.caption,
     media_type: media.media_type,
+    media_product_type: media.media_product_type,
     media_url: media.media_url,
     thumbnail_url: media.thumbnail_url,
     permalink: media.permalink,
@@ -911,236 +984,14 @@ export function registerMetaTools(server: McpServer, config: MetaConfig): void {
     "meta_get_business_assets",
     "Discover accessible Meta Business assets read-only: businesses, pages, Instagram accounts, pixels, and datasets when permissions allow.",
     {
-      businessId: z.string().optional().describe("Business Manager ID. If omitted, the tool lists /me/businesses and uses ad account business metadata when available."),
-      adAccountId: adAccountIdSchema.optional().describe("Optional ad account ID to discover account-level pixels/datasets and related business."),
+      businessId: z.string().optional().describe("Business Manager ID. With adAccountId, discover only its owning Business; otherwise list /me/businesses when this is omitted."),
+      adAccountId: adAccountIdSchema.optional().describe("Optional ad account ID to discover its owner Business and assigned pixels; datasets are read from that Business when permitted."),
       limit: limitSchema,
-      cursor: cursorSchema,
+      cursor: cursorSchema.describe("Legacy cursor for /me/businesses only. Use cursors for asset edges."),
+      cursors: z.record(z.string(), z.string()).optional().describe("Per-edge cursors from paging/nextActions. Never reuse a cursor for another edge."),
+      maxPages: z.number().int().min(1).max(5).default(3).describe("Maximum pages per edge; remaining pages are reported explicitly."),
     },
-    async ({ businessId, adAccountId, limit, cursor }) => {
-      const warnings: MetaWarning[] = [];
-      const businessIds = new Set<string>();
-      const businessesById = new Map<string, Record<string, unknown>>();
-      const pagesById = new Map<string, Record<string, unknown>>();
-      const instagramById = new Map<string, Record<string, unknown>>();
-      const pixelsById = new Map<string, Record<string, unknown>>();
-      const datasetsById = new Map<string, Record<string, unknown>>();
-
-      const businessFields = "id,name,verification_status,created_time,updated_time";
-      const pageFields = "id,name,category,tasks,picture{url},instagram_business_account{id,username,name,ig_id,profile_picture_url},connected_instagram_account{id,username,name,ig_id,profile_picture_url}";
-      const pageFallbackFields = "id,name,category,tasks,picture{url}";
-      const instagramFields = "id,username,name,ig_id,profile_picture_url";
-      const pixelFields = "id,name,last_fired_time,creation_time,owner_ad_account,business";
-      const pixelFallbackFields = "id,name,last_fired_time,creation_time";
-      const datasetFields = "id,name,description,creation_time,updated_time";
-      const datasetFallbackFields = "id,name";
-
-      if (businessId) {
-        businessIds.add(businessId);
-        const business = await fetchGraph(
-          client,
-          "business",
-          graphUrl(client, `/${businessId}`, { fields: businessFields }),
-          warnings,
-          "Grant business_management or provide a Business ID the token can read.",
-        );
-        if (business) businessesById.set(String(business.id ?? businessId), business);
-      } else {
-        const businesses = await fetchGraph(
-          client,
-          "businesses",
-          graphUrl(client, "/me/businesses", { fields: businessFields, limit, after: cursor }),
-          warnings,
-          "Grant business_management to list Business Manager assets. You can still provide businessId or adAccountId directly.",
-        );
-        for (const business of dataArray(businesses)) {
-          const id = typeof business.id === "string" ? business.id : undefined;
-          if (!id) continue;
-          businessIds.add(id);
-          businessesById.set(id, business);
-        }
-      }
-
-      if (adAccountId) {
-        const accountBusiness = await fetchGraph(
-          client,
-          "ad_account_business",
-          graphUrl(client, `/${formatAdAccountId(adAccountId)}`, {
-            fields: "id,name,business{id,name,verification_status}",
-          }),
-          warnings,
-          "Grant ads_read and business access for the selected ad account.",
-        );
-        const business = isRecord(accountBusiness?.business) ? accountBusiness.business : undefined;
-        if (business && typeof business.id === "string") {
-          businessIds.add(business.id);
-          businessesById.set(business.id, business);
-        }
-
-        const adAccountPixels = await fetchGraphWithFallback(
-          client,
-          "ad_account_pixels",
-          graphUrl(client, `/${formatAdAccountId(adAccountId)}/adspixels`, {
-            fields: pixelFields,
-            limit,
-            after: cursor,
-          }),
-          graphUrl(client, `/${formatAdAccountId(adAccountId)}/adspixels`, {
-            fields: pixelFallbackFields,
-            limit,
-            after: cursor,
-          }),
-          warnings,
-          "Grant ads_read and pixel access on the ad account to read pixel metadata.",
-        );
-        addById(pixelsById, dataArray(adAccountPixels));
-
-        const offlineDatasets = await fetchGraphWithFallback(
-          client,
-          "ad_account_offline_datasets",
-          graphUrl(client, `/${formatAdAccountId(adAccountId)}/offline_conversion_data_sets`, {
-            fields: datasetFields,
-            limit,
-            after: cursor,
-          }),
-          graphUrl(client, `/${formatAdAccountId(adAccountId)}/offline_conversion_data_sets`, {
-            fields: datasetFallbackFields,
-            limit,
-            after: cursor,
-          }),
-          warnings,
-          "Offline dataset access may require business-level permissions; provide businessId if available.",
-        );
-        addById(datasetsById, dataArray(offlineDatasets));
-      }
-
-      for (const id of businessIds) {
-        const [
-          ownedPages,
-          clientPages,
-          ownedInstagram,
-          clientInstagram,
-          ownedPixels,
-          clientPixels,
-          ownedDatasets,
-          clientDatasets,
-        ] = await Promise.all([
-          fetchGraphWithFallback(
-            client,
-            `business:${id}:owned_pages`,
-            graphUrl(client, `/${id}/owned_pages`, { fields: pageFields, limit, after: cursor }),
-            graphUrl(client, `/${id}/owned_pages`, { fields: pageFallbackFields, limit, after: cursor }),
-            warnings,
-            "Grant business_management plus pages_show_list/pages_read_engagement to read owned Pages.",
-          ),
-          fetchGraphWithFallback(
-            client,
-            `business:${id}:client_pages`,
-            graphUrl(client, `/${id}/client_pages`, { fields: pageFields, limit, after: cursor }),
-            graphUrl(client, `/${id}/client_pages`, { fields: pageFallbackFields, limit, after: cursor }),
-            warnings,
-            "Client Page access may require Business Manager partner permissions.",
-          ),
-          fetchGraph(
-            client,
-            `business:${id}:owned_instagram_accounts`,
-            graphUrl(client, `/${id}/owned_instagram_accounts`, { fields: instagramFields, limit, after: cursor }),
-            warnings,
-            "Grant business_management and instagram_basic to read owned Instagram accounts.",
-          ),
-          fetchGraph(
-            client,
-            `business:${id}:client_instagram_accounts`,
-            graphUrl(client, `/${id}/client_instagram_accounts`, { fields: instagramFields, limit, after: cursor }),
-            warnings,
-            "Client Instagram access may require Business Manager partner permissions and instagram_basic.",
-          ),
-          fetchGraphWithFallback(
-            client,
-            `business:${id}:owned_pixels`,
-            graphUrl(client, `/${id}/owned_pixels`, { fields: pixelFields, limit, after: cursor }),
-            graphUrl(client, `/${id}/owned_pixels`, { fields: pixelFallbackFields, limit, after: cursor }),
-            warnings,
-            "Grant business_management and asset access to read owned pixels.",
-          ),
-          fetchGraphWithFallback(
-            client,
-            `business:${id}:client_pixels`,
-            graphUrl(client, `/${id}/client_pixels`, { fields: pixelFields, limit, after: cursor }),
-            graphUrl(client, `/${id}/client_pixels`, { fields: pixelFallbackFields, limit, after: cursor }),
-            warnings,
-            "Client pixel access may require Business Manager partner permissions.",
-          ),
-          fetchGraphWithFallback(
-            client,
-            `business:${id}:owned_data_sets`,
-            graphUrl(client, `/${id}/owned_data_sets`, { fields: datasetFields, limit, after: cursor }),
-            graphUrl(client, `/${id}/owned_data_sets`, { fields: datasetFallbackFields, limit, after: cursor }),
-            warnings,
-            "Dataset edges vary by Meta account setup; try adAccountId fallback or verify business asset permissions.",
-          ),
-          fetchGraphWithFallback(
-            client,
-            `business:${id}:client_data_sets`,
-            graphUrl(client, `/${id}/client_data_sets`, { fields: datasetFields, limit, after: cursor }),
-            graphUrl(client, `/${id}/client_data_sets`, { fields: datasetFallbackFields, limit, after: cursor }),
-            warnings,
-            "Client dataset access may require partner permissions or may not be available for this business.",
-          ),
-        ]);
-
-        addById(pagesById, dataArray(ownedPages).map((page) => normalizePage(page, `business:${id}:owned_pages`)));
-        addById(pagesById, dataArray(clientPages).map((page) => normalizePage(page, `business:${id}:client_pages`)));
-
-        for (const page of [...dataArray(ownedPages), ...dataArray(clientPages)]) {
-          const pageContext = {
-            page_id: page.id,
-            page_name: page.name,
-            business_id: id,
-          };
-          if (isRecord(page.instagram_business_account)) {
-            addById(instagramById, [
-              normalizeInstagramAccount(page.instagram_business_account, "page.instagram_business_account", pageContext),
-            ]);
-          }
-          if (isRecord(page.connected_instagram_account)) {
-            addById(instagramById, [
-              normalizeInstagramAccount(page.connected_instagram_account, "page.connected_instagram_account", pageContext),
-            ]);
-          }
-        }
-
-        addById(instagramById, dataArray(ownedInstagram).map((account) => normalizeInstagramAccount(account, `business:${id}:owned_instagram_accounts`, { business_id: id })));
-        addById(instagramById, dataArray(clientInstagram).map((account) => normalizeInstagramAccount(account, `business:${id}:client_instagram_accounts`, { business_id: id })));
-        addById(pixelsById, dataArray(ownedPixels));
-        addById(pixelsById, dataArray(clientPixels));
-        addById(datasetsById, dataArray(ownedDatasets));
-        addById(datasetsById, dataArray(clientDatasets));
-      }
-
-      if (businessIds.size === 0) {
-        warnings.push({
-          area: "business_assets",
-          message: "No readable Business Manager was discovered from /me/businesses or the provided ad account.",
-          suggestion: "Provide businessId directly, grant business_management, or use adAccountId for account-level pixels/datasets.",
-        });
-      }
-
-      return ok({
-        businesses: [...businessesById.values()],
-        pages: [...pagesById.values()],
-        instagram_accounts: [...instagramById.values()],
-        pixels: [...pixelsById.values()],
-        datasets: [...datasetsById.values()],
-        counts: {
-          businesses: businessesById.size,
-          pages: pagesById.size,
-          instagram_accounts: instagramById.size,
-          pixels: pixelsById.size,
-          datasets: datasetsById.size,
-        },
-        warnings,
-      });
-    },
+    async (args) => { try { return ok(await getBusinessAssets(client, args)); } catch(e) { return formatMcpToolError(e); } },
   );
 
   // ── P0/P1. meta_get_pages ─────────────────────────────────────────
@@ -1607,7 +1458,7 @@ export function registerMetaTools(server: McpServer, config: MetaConfig): void {
   // ── P0/P1. meta_get_creative_assets ───────────────────────────────
   server.tool(
     "meta_get_creative_assets",
-    "Return normalized creative asset metadata for ads or creative IDs: thumbnail, object_story_spec, asset_feed_spec, video/image/link URL, CTA, and page/IG references.",
+    "Return ad-linked creative media with actual ad names, collection covers, all carousel/flexible components, resolved image hashes and video URLs. Catalog-only ads are classified separately; use the hosted GetMCPAds service for an interactive visual gallery. Raw creative metadata remains available for diagnostics.",
     {
       adAccountId: adAccountIdSchema.optional().describe("Ad account ID. Used when adIds/creativeIds are omitted."),
       adIds: z.array(z.string()).optional().describe("Specific ad IDs to enrich."),
@@ -1617,8 +1468,8 @@ export function registerMetaTools(server: McpServer, config: MetaConfig): void {
     },
     async ({ adAccountId, adIds, creativeIds, limit, cursor }) => {
       const warnings: MetaWarning[] = [];
-      const creativeFields = "id,name,body,title,thumbnail_url,image_url,video_id,link_url,call_to_action_type,effective_object_story_id,object_type,object_story_spec,asset_feed_spec";
-      const adFields = `id,name,status,effective_status,campaign_id,adset_id,creative{${creativeFields}}`;
+      const creativeFields = "id,name,body,title,thumbnail_url,image_url,image_hash,video_id,product_set_id,link_url,call_to_action_type,effective_object_story_id,object_type,object_story_spec,asset_feed_spec";
+      const adFields = `id,name,account_id,status,effective_status,campaign_id,adset_id,creative{${creativeFields}}`;
       let sourceType: "ad" | "creative" = "ad";
       let result: Record<string, unknown> | null = null;
       const idChunkSize = 50;
@@ -1626,25 +1477,20 @@ export function registerMetaTools(server: McpServer, config: MetaConfig): void {
       if (creativeIds && creativeIds.length > 0) {
         sourceType = "creative";
         const merged: Record<string, unknown> = {};
-        for (let index = 0; index < creativeIds.length; index += idChunkSize) {
-          const chunk = creativeIds.slice(index, index + idChunkSize);
-          const chunkResult = await fetchGraph(
-            client,
-            `creative_ids_${Math.floor(index / idChunkSize) + 1}`,
-            graphUrl(client, "", { ids: chunk.join(","), fields: creativeFields }),
-            warnings,
-            "Verify the creative IDs are readable by this token and include only read-only creative fields.",
-          );
-          Object.assign(merged, chunkResult ?? {});
+        for (const id of creativeIds.slice(0,20)) {
+          const creative = await fetchGraph(client,"creative_node",graphUrl(client,`/${encodeURIComponent(id)}`,{fields:creativeFields}),warnings,"Verify creative access, or use adIds with adAccountId for ad names.");
+          if(creative) merged[id]=creative;
         }
-        result = merged;
-        if (creativeIds.length > idChunkSize) {
-          warnings.push({
-            area: "creative_assets",
-            message: `Creative ID enrichment was chunked into batches of ${idChunkSize} to avoid oversized Graph API responses.`,
-            suggestion: "Prefer passing targeted creativeIds/adIds from insights for complete creative-to-site coverage.",
-          });
+        result=merged;
+        if(creativeIds.length>20) warnings.push({area:"creative_assets",message:"Only 20 creative IDs resolved.",suggestion:"Use batches of 20 creative IDs, or adIds with adAccountId."});
+      } else if (adIds && adIds.length > 0 && !adAccountId) {
+        const merged: Record<string, unknown> = {};
+        for (const id of adIds.slice(0, 20)) {
+          const ad = await fetchGraph(client,"ad_creative",graphUrl(client,`/${encodeURIComponent(id)}`,{fields:adFields}),warnings,"Provide the owning adAccountId for efficient targeted ad lookup.");
+          if (ad) merged[id] = ad;
         }
+        if(adIds.length>20) warnings.push({area:"creative_assets",message:"Only 20 ad IDs resolved without an account.",suggestion:"Provide adAccountId to resolve the full selection."});
+        result=merged;
       } else if (adIds && adIds.length > 0) {
         sourceType = "ad";
         const merged: Record<string, unknown> = {};
@@ -1653,12 +1499,21 @@ export function registerMetaTools(server: McpServer, config: MetaConfig): void {
           const chunkResult = await fetchGraph(
             client,
             `ad_ids_creatives_${Math.floor(index / idChunkSize) + 1}`,
-            graphUrl(client, "", { ids: chunk.join(","), fields: adFields }),
+            graphUrl(client, `/${formatAdAccountId(adAccountId!)}/ads`, { filtering: JSON.stringify([{field:"id",operator:"IN",value:chunk}]), fields: adFields, limit: 500 }),
             warnings,
             "Verify the ad IDs are readable by this token and belong to accessible ad accounts.",
           );
-          Object.assign(merged, chunkResult ?? {});
+          for (const ad of dataArray(chunkResult)) if (ad.id) merged[String(ad.id)] = ad;
         }
+        const missingIds = adIds.filter(id => !merged[id]);
+        // Account inventory can omit archived/deleted ads still present in
+        // historical insights. Read those exact nodes rather than invent media.
+        for (const id of missingIds.slice(0, 10)) {
+          const ad = await fetchGraph(client,"historical_ad_creative",graphUrl(client,`/${encodeURIComponent(id)}`,{fields:adFields}),warnings,"Historical ad metadata may no longer be accessible.");
+          if (ad && typeof ad.account_id === "string" && formatAdAccountId(ad.account_id) === formatAdAccountId(adAccountId!)) merged[id] = ad;
+          else if (ad) warnings.push({area:"creative_assets",message:`Ad ${id} was excluded because its owning account could not be verified against the requested account.`,suggestion:"Use an ad from the selected account."});
+        }
+        if (missingIds.length > 10) warnings.push({area:"creative_assets",message:"Historical ad fallback limited to 10 missing ads.",suggestion:"Narrow the ad selection to resolve additional historical ads."});
         result = merged;
         if (adIds.length > idChunkSize) {
           warnings.push({
@@ -1692,6 +1547,42 @@ export function registerMetaTools(server: McpServer, config: MetaConfig): void {
         ? dataArray(result)
         : Object.values(result ?? {}).filter(isRecord);
       const assets = records.map((record) => normalizeCreativeAsset(record, sourceType));
+      // Resolve hashes and videos without replacing individual carousel media
+      // with the parent creative's (possibly product) thumbnail.
+      const allMedia = assets.flatMap(asset => Array.isArray(asset.media) ? asset.media as import("./creative-media.js").MetaMedia[] : []);
+      // Always refresh hashes, even when Meta also returns a stale/small preview.
+      const hashes = [...new Set(allMedia.filter(m => m.image_hash).map(m => m.image_hash!))];
+      if (hashes.length && adAccountId) {
+        for (let offset = 0; offset < hashes.length; offset += 50) {
+          const images = await fetchGraph(client, "creative_image_hashes", graphUrl(client, `/${formatAdAccountId(adAccountId)}/adimages`, {
+            hashes: JSON.stringify(hashes.slice(offset, offset + 50)), fields: "hash,permalink_url,url", limit: 50,
+          }), warnings, "Verify ads_read access to the ad account image library.");
+          for (const image of dataArray(images)) for (const item of allMedia) if (item.image_hash === image.hash) item.image_url = metaImageFileUrl(image.url, image.permalink_url, item.image_url);
+        }
+      }
+      const videoIds = [...new Set(allMedia.map(m => m.video_id).filter((id): id is string => Boolean(id)))];
+      const pageClientFor = pageClientResolver(client, warnings);
+      for (const id of videoIds.slice(0, 10)) {
+        const video = await fetchGraph(client, "creative_video", graphUrl(client, `/${encodeURIComponent(id)}`, {fields:"id,picture,source,from"}), warnings,
+          "Verify access to the ad video and its owning Page.") ?? {id};
+        const owner = assets.find(asset => (asset.media as import("./creative-media.js").MetaMedia[]).some(m => m.video_id === id));
+        const pageId = firstString(isRecord(video.from) ? video.from.id : undefined, owner?.page_id,
+          typeof owner?.effective_object_story_id === "string" ? owner.effective_object_story_id.split("_")[0] : undefined);
+        if (!video.source && pageId) {
+          const pageClient=await pageClientFor(pageId);
+          if (pageClient) {
+            const resolved=await fetchGraph(pageClient,"creative_page_video",graphUrl(pageClient,`/${encodeURIComponent(id)}`,{fields:"id,picture,source"}),warnings,"Verify Page content access.");
+            if(resolved) Object.assign(video,resolved);
+          }
+        }
+        for (const item of allMedia) if (item.video_id === id) {
+          item.thumbnail_url = firstString(video?.picture, item.thumbnail_url);
+          item.source = firstString(video?.source, item.source);
+        }
+        if (!video.source) warnings.push({area:"creative_video",message:`No playable source returned for video ${id}. A cover is not evidence of the full video.`,suggestion:"Check the connected profile's access to the owning Page; re-resolve this video before playback or analysis."});
+      }
+      if (videoIds.length > 10) warnings.push({area:"creative_video",message:"Video URL resolution limited to 10 videos.",suggestion:"Narrow the ad selection or use meta_get_video_sources to resolve additional videos."});
+
       const paging = pagingInfo(result);
       if (paging) {
         warnings.push({
@@ -2461,7 +2352,7 @@ export function registerMetaTools(server: McpServer, config: MetaConfig): void {
   // ── P2. meta_get_organic_content_enrichment ───────────────────────
   server.tool(
     "meta_get_organic_content_enrichment",
-    "Enrich Facebook Page posts and Instagram organic media with media URLs, permalinks, counts, attachments, and optional read-only insights.",
+    "Read Facebook Page posts and Instagram media with URLs, native periods and optional insights. These are content insights, not Ads Insights; do not infer an organic-only breakdown.",
     {
       pageId: z.string().optional().describe("Facebook Page ID for /posts and linked IG discovery."),
       instagramAccountId: z.string().optional().describe("Instagram professional account ID for /media."),
@@ -2478,11 +2369,13 @@ export function registerMetaTools(server: McpServer, config: MetaConfig): void {
     async ({ pageId, instagramAccountId, postIds, mediaIds, includePagePosts, includeInstagramMedia, includeInsights, limit, cursor, since, until }) => {
       const warnings: MetaWarning[] = [];
       const paging: Record<string, unknown> = {};
-      const pagePostFields = includeInsights
-        ? "id,message,created_time,type,permalink_url,full_picture,attachments{media,type,url,target,title,description},shares,likes.summary(true),comments.summary(true),insights.metric(post_impressions,post_engaged_users,post_clicks)"
-        : "id,message,created_time,type,permalink_url,full_picture,attachments{media,type,url,target,title,description},shares,likes.summary(true),comments.summary(true)";
-      const pagePostFallbackFields = "id,message,created_time,type,permalink_url,full_picture,shares,likes.summary(true),comments.summary(true)";
-      const igMediaFields = "id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,username,like_count,comments_count,children{id,media_type,media_url,thumbnail_url,permalink}";
+      // Fetch metadata independently: an unavailable insight must not hide the post.
+      // Likes/comments edges require additional user-content access even with
+      // limit(0). Keep the native shares count; do not request those edges.
+      const pagePostFields = "id,message,created_time,permalink_url,full_picture,attachments{media,type,url,target,title,description},shares";
+      const pagePostFallbackFields = "id,message,created_time,permalink_url,full_picture,shares";
+      const igMediaFields = "id,caption,media_type,media_product_type,media_url,thumbnail_url,permalink,timestamp,username,like_count,comments_count,children{id,media_type,media_url,thumbnail_url,permalink}";
+      const pageClientFor = pageClientResolver(client, warnings);
       const pagePosts: Record<string, unknown>[] = [];
       const instagramMedia: Record<string, unknown>[] = [];
       let resolvedInstagramAccountId = instagramAccountId;
@@ -2496,38 +2389,43 @@ export function registerMetaTools(server: McpServer, config: MetaConfig): void {
       }
 
       if (includePagePosts && postIds && postIds.length > 0) {
-        const result = await fetchGraphWithFallback(
-          client,
-          "page_post_ids",
-          graphUrl(client, "", { ids: postIds.join(","), fields: pagePostFields }),
-          graphUrl(client, "", { ids: postIds.join(","), fields: pagePostFallbackFields }),
-          warnings,
-          "Post insights or attachments may require pages_read_engagement or a Page token; minimal post metadata is returned when rich fields fail.",
-        );
-        pagePosts.push(...Object.values(result ?? {}).filter(isRecord).map(normalizeOrganicPost));
+        for (const postId of [...new Set(postIds)]) {
+          const ownerId = /^(\d+)_\d+$/.exec(postId)?.[1] ?? pageId;
+          if (!ownerId) {
+            warnings.push({area: "page_post_ids", message: `Cannot resolve the owning Page for post ${postId}.`, suggestion: "Provide pageId or the full PageID_PostID returned by Meta."});
+            continue;
+          }
+          const pageClient = await pageClientFor(ownerId);
+          if (!pageClient) continue;
+          const post = await fetchGraphWithFallback(pageClient, "page_post_ids",
+            graphUrl(pageClient, `/${encodeURIComponent(postId)}`, {fields: pagePostFields}),
+            graphUrl(pageClient, `/${encodeURIComponent(postId)}`, {fields: pagePostFallbackFields}), warnings,
+            "Post attachments require Page content access.");
+          if (post) pagePosts.push(normalizeOrganicPost(post));
+        }
       } else if (includePagePosts && pageId) {
-        const result = await fetchGraphWithFallback(
-          client,
-          "page_posts_enrichment",
-          graphUrl(client, `/${pageId}/posts`, {
-            fields: pagePostFields,
-            limit,
-            after: cursor,
-            since,
-            until,
-          }),
-          graphUrl(client, `/${pageId}/posts`, {
-            fields: pagePostFallbackFields,
-            limit,
-            after: cursor,
-            since,
-            until,
-          }),
-          warnings,
-          "Post insights or attachment fields may require pages_read_engagement and Page access. Minimal post fields are returned when rich fields fail.",
-        );
-        pagePosts.push(...dataArray(result).map(normalizeOrganicPost));
-        paging.page_posts = pagingInfo(result);
+        const pageClient = await pageClientFor(pageId);
+        if (pageClient) {
+          const result = await fetchGraphWithFallback(pageClient, "page_posts_enrichment",
+            graphUrl(pageClient, `/${encodeURIComponent(pageId)}/posts`, {fields: pagePostFields, limit, after: cursor, since, until}),
+            graphUrl(pageClient, `/${encodeURIComponent(pageId)}/posts`, {fields: pagePostFallbackFields, limit, after: cursor, since, until}), warnings,
+            "Post attachments require pages_read_engagement and Page access.");
+          pagePosts.push(...dataArray(result).map(normalizeOrganicPost));
+          paging.page_posts = pagingInfo(result);
+        }
+      }
+
+      if (includeInsights) {
+        for (const post of pagePosts) {
+          const id = typeof post.id === "string" ? post.id : undefined;
+          const ownerId = id ? /^(\d+)_\d+$/.exec(id)?.[1] ?? pageId : undefined;
+          if (!id || !ownerId) continue;
+          const pageClient = await pageClientFor(ownerId);
+          if (!pageClient) continue;
+          post.insights = await fetchGraph(pageClient, `page_post:${id}:insights`,
+            graphUrl(pageClient, `/${encodeURIComponent(id)}/insights`, {metric: "post_media_view,post_clicks"}), warnings,
+            "Page post insights require read_insights and a Page token. Unavailable metrics are not zero; post metadata is retained.");
+        }
       }
 
       if (includeInstagramMedia && !resolvedInstagramAccountId && pageId) {
@@ -2580,18 +2478,38 @@ export function registerMetaTools(server: McpServer, config: MetaConfig): void {
         for (const media of instagramMedia) {
           const mediaId = typeof media.id === "string" ? media.id : undefined;
           if (!mediaId) continue;
-          const insights = await fetchGraph(
-            client,
-            `instagram_media:${mediaId}:insights`,
-            graphUrl(client, `/${mediaId}/insights`, {
-              metric: "impressions,reach,engagement,saved,video_views,plays,total_interactions",
-            }),
-            warnings,
-            "IG media insight metrics vary by media type and API version. Basic media metadata remains available when insights fail.",
-          );
-          media.insights = insights;
+          const metrics = instagramInsightMetrics(media);
+          media.insights_requested_metrics = metrics;
+          try {
+            media.insights = await client.fetchUrl(graphUrl(client, `/${encodeURIComponent(mediaId)}/insights`, {metric: metrics.join(",")}));
+          } catch (error) {
+            warnings.push(warningFromError(`instagram_media:${mediaId}:insights`, error,
+              "Insight availability depends on media format, age and permissions. Unavailable metrics are not zero; media metadata is retained."));
+            // One bounded fallback for metric incompatibility only. Do not retry
+            // authentication, permission, rate-limit or unavailable-media failures.
+            const incompatible = error instanceof MetaApiException && error.code === 100
+              && /metric.*(incompat|valid|supported|must be)|invalid.*metric/i.test(error.message);
+            media.insights = incompatible && metrics.length > 1
+              ? await fetchGraph(client, `instagram_media:${mediaId}:reach`,
+                  graphUrl(client, `/${encodeURIComponent(mediaId)}/insights`, {metric: "reach"}), warnings,
+                  "Only reach was retried after Meta rejected the format-specific metric selection; other metrics remain unavailable.")
+              : null;
+          }
+          media.insights_returned_metrics = dataArray(isRecord(media.insights) ? media.insights : null).map(row => row.name);
+
         }
       }
+
+      const insightState=(item:Record<string,unknown>,requested:string[])=>{
+        const result=isRecord(item.insights)?item.insights:null;
+        const returned=dataArray(result);
+        return {requested:includeInsights,source:"content_insights",delivery_breakdown:"not_established",metrics:Object.fromEntries(requested.map(name=>{
+          const metric=returned.find(m=>m.name===name);
+          return [name,{status:!includeInsights?"not_requested":!result?"read_failed":!metric?"not_returned":"returned",period:metric?.period??null}];
+        }))};
+      };
+      for(const post of pagePosts)post.insight_coverage=insightState(post,["post_media_view","post_clicks"]);
+      for(const media of instagramMedia)media.insight_coverage=insightState(media,Array.isArray(media.insights_requested_metrics)?media.insights_requested_metrics:instagramInsightMetrics(media));
 
       return ok({
         page_id: pageId,
@@ -2603,8 +2521,14 @@ export function registerMetaTools(server: McpServer, config: MetaConfig): void {
           instagram_media: instagramMedia.length,
         },
         notes: [
+          "Facebook likes/comments edges are not requested. Missing engagement counts are unavailable, not zero; no commenter profiles are collected.",
+          "Media insights retain Meta’s native periods (usually lifetime). since/until filter the media list, not the measurement period of each media insight.",
           "Instagram thumbnail_url is media-type dependent and may only appear for video/Reels media.",
-          "This tool only reads existing organic content; it never publishes, edits, hides, or deletes posts.",
+          "This tool reads existing Page/Instagram content; it never publishes, edits, hides, or deletes posts.",
+          "Content insights are not Ads Insights. Do not label a metric organic-only unless Meta supplies an explicit organic breakdown or definition.",
+          "Preserve native metric names, titles, descriptions and periods. Unusual titles alone do not establish audience restrictions.",
+          "Native Reel watch time is in milliseconds; do not add an unverified per-view denominator, infer duration from CDN URLs, or infer completion rates or causes of counter discrepancies.",
+          "Keep full returned media URLs as clickable link targets; do not strip required signed query parameters. A media URL is different from a post permalink or an ad landing page.",
         ],
         paging,
         warnings,
@@ -2659,7 +2583,7 @@ export function registerMetaTools(server: McpServer, config: MetaConfig): void {
         if (statusFilter) url += `&filtering=[{"field":"effective_status","operator":"IN","value":["${statusFilter}"]}]`;
         if (cursor) url += `&after=${cursor}`;
         const result = await client.fetchUrl(url);
-        return ok(result);
+        return ok(entityListResult(result, statusFilter));
       } catch (e) {
         return formatMcpToolError(e);
       }
@@ -2685,7 +2609,7 @@ export function registerMetaTools(server: McpServer, config: MetaConfig): void {
         if (statusFilter) url += `&filtering=[{"field":"effective_status","operator":"IN","value":["${statusFilter}"]}]`;
         if (cursor) url += `&after=${cursor}`;
         const result = await client.fetchUrl(url);
-        return ok(result);
+        return ok(entityListResult(result, statusFilter));
       } catch (e) {
         return formatMcpToolError(e);
       }
@@ -2698,20 +2622,22 @@ export function registerMetaTools(server: McpServer, config: MetaConfig): void {
     "List ads for a Meta ad account, optionally filtered by ad set. Returns ad ID, name, status, and creative reference.",
     {
       adAccountId: adAccountIdSchema,
-      adsetId: z.string().optional().describe("Filter by ad set ID"),
+      adsetId: z.string().optional().describe("Filter by ad set ID; adSetId is also accepted."),
+      adSetId: z.string().optional().describe("Alias for adsetId. If both are supplied, they must match."),
       statusFilter: statusFilterSchema,
       limit: limitSchema,
       cursor: cursorSchema,
     },
-    async ({ adAccountId, adsetId, statusFilter, limit, cursor }) => {
+    async ({ adAccountId, adsetId, adSetId, statusFilter, limit, cursor }) => {
       try {
+        if (adsetId && adSetId && adsetId !== adSetId) throw new Error("adsetId and adSetId must match when both are supplied.");
         const fields = "id,name,status,effective_status,adset_id,campaign_id,creative{id,name,thumbnail_url,object_story_spec,asset_feed_spec}";
-        const parent = adsetId ?? adAccountId;
+        const parent = adsetId ?? adSetId ?? adAccountId;
         let url = `https://graph.facebook.com/${client.apiVersion}/${parent}/ads?fields=${fields}&limit=${limit}`;
         if (statusFilter) url += `&filtering=[{"field":"effective_status","operator":"IN","value":["${statusFilter}"]}]`;
         if (cursor) url += `&after=${cursor}`;
         const result = await client.fetchUrl(url);
-        return ok(result);
+        return ok(entityListResult(result, statusFilter));
       } catch (e) {
         return formatMcpToolError(e);
       }
@@ -2732,13 +2658,19 @@ The query planner automatically splits incompatible metric/breakdown combination
       datePreset: datePresetSchema.describe("Predefined date range (e.g., last_7d, last_30d)"),
       timeRange: timeRangeSchema.describe("Custom date range with since/until in YYYY-MM-DD format"),
       timeIncrement: z.union([z.literal(1), z.literal(7), z.literal(14), z.literal(28), z.literal(30), z.string()]).optional().describe("Time granularity: 1 (daily), 7 (weekly), 'monthly', or 'all_days'"),
+      adIds: z.array(z.string().regex(/^\d+$/)).min(1).max(100).optional().describe("Restrict ad-level insights to these ad IDs."),
+      attributionMode: z.enum(["account", "adset", "explicit"]).default("account").describe("Use Meta account settings, ad-set settings, or explicitly supplied windows. No setting is inferred from returned numbers."),
+      attributionWindows: z.array(z.enum(["1d_click", "7d_click", "28d_click", "1d_view", "1d_ev"])).min(1).max(5).optional().describe("Only with attributionMode explicit. These windows are sent identically to every split query and account total."),
+      actionReportTime: z.enum(["impression", "conversion", "mixed"]).default("impression").describe("Date basis for actions, sent explicitly to Meta."),
+      includeAccountTotals: z.boolean().default(false).describe("Also read native account-level totals with the same dates, metrics and attribution. Requires no adIds or breakdowns."),
       limit: z.number().int().min(1).max(5000).optional().default(500),
     },
-    async ({ adAccountId, level, metrics, breakdowns, datePreset, timeRange, timeIncrement, limit }) => {
+    async ({ adAccountId, level, metrics, breakdowns, datePreset, timeRange, timeIncrement, adIds, limit, attributionMode = "account", attributionWindows, actionReportTime = "impression", includeAccountTotals = false }) => {
       try {
         const startTime = Date.now();
 
         // Plan the query
+        if (adIds && level !== "ad") throw new Error("adIds requires level ad.");
         const plan = planQueries({
           adAccountId,
           level,
@@ -2759,10 +2691,14 @@ The query planner automatically splits incompatible metric/breakdown combination
           });
         }
 
+        if (includeAccountTotals && (adIds?.length || breakdowns?.length)) throw new Error("Native account totals require no ad ID filter or breakdowns; run a separate account-level query instead.");
+        const measurement = {attributionMode, attributionWindows: attributionWindows ? [...new Set(attributionWindows)] : undefined, actionReportTime};
+        const sentMeasurement = measurementParams({...plan.requests[0], ...measurement});
+        for(const request of plan.requests) Object.assign(request, measurement);
         // Execute all requests
         const allResults: Record<string, unknown>[][] = [];
         for (const request of plan.requests) {
-          const result = await client.fetchInsights(adAccountId, request);
+          const result = await client.fetchInsights(adAccountId, {...request, ...(adIds ? {filtering:[{field:"ad.id",operator:"IN",value:adIds}]} : {})});
           allResults.push(result);
         }
 
@@ -2777,11 +2713,29 @@ The query planner automatically splits incompatible metric/breakdown combination
           }));
         }
 
+        let accountTotals: Record<string, unknown>[] | null = null;
+        let totalsRequestCount = 0;
+        if(includeAccountTotals) {
+          if(level === "account") accountTotals = data;
+          else {
+            const totalsPlan = planQueries({adAccountId,level:"account",metrics,breakdowns:[],datePreset:(datePreset??"last_30d") as import("./types.js").DatePreset,timeRange,timeIncrement:timeIncrement as import("./types.js").TimeIncrement|undefined,limit});
+            if(totalsPlan.errors.length) throw new Error("Cannot produce comparable native account totals: " + totalsPlan.errors.join("; "));
+            const results:Record<string,unknown>[][]=[];
+            for(const q of totalsPlan.requests){results.push(await client.fetchInsights(adAccountId,{...q,...measurement}));totalsRequestCount++;}
+            accountTotals=mergeResults(results,totalsPlan.joinKeys);
+            if(totalsPlan.calculatedMetrics.length)accountTotals=accountTotals.map(row=>({...row,...calculateDerivedMetrics(row as import("./types.js").InsightRow)}));
+          }
+        }
+        const evidence=reportingEvidence(allResults,plan.requests,plan.joinKeys,data);
         return ok({
           data,
+          reporting_context: {ad_account_id:adAccountId,level,time_range:timeRange??null,date_preset:timeRange?null:(datePreset??"last_30d"),time_increment:timeIncrement??"all_days",attribution:{mode:attributionMode,requested_windows:attributionWindows??null,resolved_native_windows:null,parameters_sent:sentMeasurement},action_report_time:actionReportTime,ad_ids:adIds??null,breakdowns:breakdowns??[],pagination_exhausted:true},
+          account_totals: accountTotals,
+          evidence,
+          notes: evidence.notes,
           rowCount: data.length,
           debug: {
-            requestCount: plan.requests.length,
+            requestCount: plan.requests.length + totalsRequestCount,
             executionTimeMs: Date.now() - startTime,
             warnings: plan.warnings,
             calculatedMetrics: plan.calculatedMetrics,
@@ -2938,20 +2892,32 @@ The query planner automatically splits incompatible metric/breakdown combination
   // ── 13. meta_get_page_posts ───────────────────────────────────────
   server.tool(
     "meta_get_page_posts",
-    "Get recent posts from a connected Facebook/Instagram page. Requires page access.",
+    "Read published Facebook Page posts using a Page token resolved from the connected user. Returns exact PageID_PostID, message, permalink and media attachments. Use postId for an exact existing-post ad preflight. No Instagram media, comments, likes or insights are requested; this read alone does not establish advertising eligibility.",
     {
-      pageId: z.string().describe("Facebook Page ID"),
+      pageId: z.string().regex(/^\d+$/).describe("Facebook Page ID"),
+      postId: z.string().regex(/^\d+_\d+$/).optional().describe("Exact PageID_PostID to read instead of the recent-post list; must belong to pageId."),
       limit: z.number().int().min(1).max(100).optional().default(25),
+      cursor: cursorSchema,
     },
-    async ({ pageId, limit }) => {
-      try {
-        const fields = "id,message,created_time,type,permalink_url,full_picture,shares,likes.summary(true),comments.summary(true)";
-        const url = `https://graph.facebook.com/${client.apiVersion}/${pageId}/posts?fields=${fields}&limit=${limit}`;
-        const result = await client.fetchUrl(url);
-        return ok(result);
-      } catch (e) {
-        return formatMcpToolError(e);
+    async ({ pageId, postId, limit, cursor }) => {
+      const warnings: MetaWarning[] = [];
+      if (postId && (!postId.startsWith(`${pageId}_`) || cursor)) {
+        return { ...ok({error: "postId must belong to pageId and cannot be combined with a list cursor."}), isError: true };
       }
+      const pageClient = await pageClientResolver(client, warnings)(pageId);
+      if (!pageClient) return { ...ok({error: "Could not obtain access to the selected Page. No posts were read.", warnings}), isError: true };
+      const path = postId ? `/${encodeURIComponent(postId)}` : `/${encodeURIComponent(pageId)}/posts`;
+      const params = postId ? {} : {limit, after: cursor};
+      const result = await fetchGraphWithFallback(pageClient, "page_posts",
+        graphUrl(pageClient, path, {...params, fields: "id,message,created_time,permalink_url,full_picture,attachments{media,type,url,target,title,description},shares"}),
+        graphUrl(pageClient, path, {...params, fields: "id,message,created_time,permalink_url,full_picture,shares"}), warnings,
+        "Post attachments require pages_read_engagement and access to this Page.");
+      if (!result) return { ...ok({error: "Could not read the selected Page posts.", warnings}), isError: true };
+      return ok({ ...(postId ? {data: [result]} : result), page_id: pageId,
+        coverage: {scope: postId ? "exact_post" : "page_posts", has_more: !!(isRecord(result.paging) && result.paging.next)},
+        warnings,
+        notes: ["Use the native PageID_PostID to reuse a post; the number in a Reel permalink is not its post ID.", "Advertising eligibility requires separate creative/ad validation by Meta. Missing engagement counts are unavailable, not zero."],
+      });
     },
   );
 
@@ -2980,8 +2946,9 @@ The query planner automatically splits incompatible metric/breakdown combination
       nameFilter: z.string().describe("Name substring to search for"),
       statusFilter: statusFilterSchema,
       limit: limitSchema,
+      cursor: cursorSchema,
     },
-    async ({ adAccountId, entityType, nameFilter, statusFilter, limit }) => {
+    async ({ adAccountId, entityType, nameFilter, statusFilter, limit, cursor }) => {
       try {
         const fieldsMap = {
           campaigns: "id,name,status,effective_status,objective",
@@ -2989,13 +2956,13 @@ The query planner automatically splits incompatible metric/breakdown combination
           ads: "id,name,status,effective_status,adset_id,campaign_id",
         };
         const fields = fieldsMap[entityType];
-        const filters = [{ field: "name", operator: "CONTAIN", value: nameFilter }];
-        if (statusFilter) {
-          filters.push({ field: "effective_status", operator: "IN", value: statusFilter } as { field: string; operator: string; value: string });
-        }
-        const url = `https://graph.facebook.com/${client.apiVersion}/${adAccountId}/${entityType}?fields=${fields}&limit=${limit}&filtering=${encodeURIComponent(JSON.stringify(filters))}`;
+        const filters: Array<{field: string; operator: string; value: string | string[]}> = [{ field: "name", operator: "CONTAIN", value: nameFilter }];
+        if (statusFilter) filters.push({ field: "effective_status", operator: "IN", value: [statusFilter] });
+        const url = graphUrl(client, `/${formatAdAccountId(adAccountId)}/${entityType}`, {
+          fields, limit, filtering: JSON.stringify(filters), after: cursor,
+        });
         const result = await client.fetchUrl(url);
-        return ok(result);
+        return ok(entityListResult(result, statusFilter));
       } catch (e) {
         return formatMcpToolError(e);
       }
@@ -3003,4 +2970,238 @@ The query planner automatically splits incompatible metric/breakdown combination
   );
 
   registerMetaBroadReadTools(server, client, ok);
+  // ── 16. meta_list_ad_images ───────────────────────────────────────
+  server.tool(
+    "meta_list_ad_images",
+    "List the ad account image library (/adimages): hash, name, dimensions, status, a permanent publicly served display URL (permalink_url), short-lived CDN URLs, and optionally the creatives using each image.",
+    {
+      adAccountId: adAccountIdSchema,
+      nameFilter: z.string().optional().describe("Only images whose file name matches this value"),
+      hashes: z.array(z.string()).optional().describe("Only these image hashes (exact match)"),
+      minWidth: z.number().int().min(1).optional().describe("Only images at least this wide, in pixels"),
+      minHeight: z.number().int().min(1).optional().describe("Only images at least this tall, in pixels"),
+      includeUsage: z.boolean().optional().default(false).describe("Also return the creative IDs using each image"),
+      limit: limitSchema,
+      cursor: cursorSchema,
+    },
+    async ({ adAccountId, nameFilter, hashes, minWidth, minHeight, includeUsage, limit, cursor }) => {
+      const warnings: MetaWarning[] = [];
+      const baseFields = [
+        "id", "hash", "name", "status", "created_time", "updated_time",
+        "original_width", "original_height", "width", "height",
+        "permalink_url", "url", "url_128",
+      ];
+      if (includeUsage) baseFields.push("creatives");
+
+      const result = await fetchGraph(
+        client,
+        "ad_images",
+        graphUrl(client, `/${formatAdAccountId(adAccountId)}/adimages`, {
+          fields: baseFields.join(","),
+          limit: typeof limit === "number" ? limit : 100,
+          after: cursor,
+          summary: "total_count",
+          name: nameFilter,
+          hashes: Array.isArray(hashes) && hashes.length > 0 ? JSON.stringify(hashes) : undefined,
+          minwidth: minWidth,
+          minheight: minHeight,
+        }),
+        warnings,
+        "Verify the token has ads_read on this ad account.",
+      );
+
+      const images = dataArray(result).map((image) => ({
+        ...image,
+        creatives: Array.isArray(image.creatives) ? image.creatives : undefined,
+      }));
+      const summary = isRecord(result?.summary) ? result.summary : undefined;
+
+      return ok({
+        images,
+        count: images.length,
+        totalCount: typeof summary?.total_count === "number" ? summary.total_count : undefined,
+        paging: pagingInfo(result),
+        warnings,
+        limitations: [
+          "Use url (or url_128 for a small preview) for image bytes. permalink_url can return Facebook HTML and is not an image file.",
+          "CDN URLs are signed and can expire. Re-list by hash to refresh; do not store the URLs as durable links.",
+        ],
+        nextActions: pagingInfo(result)
+          ? ["Pass the paging cursor as `cursor` to fetch the next page."]
+          : [],
+      });
+    },
+  );
+
+  // ── 17. meta_list_ad_videos ───────────────────────────────────────
+  server.tool(
+    "meta_list_ad_videos",
+    "List the ad account video library (/advideos): title, duration, processing status, and publicly served thumbnails (preferred and largest sizes). Source file URLs are returned only on request because they expire quickly.",
+    {
+      adAccountId: adAccountIdSchema,
+      titleFilter: z.string().optional().describe("Only videos whose title contains this value"),
+      minLengthSeconds: z.number().min(0).optional().describe("Only videos at least this many seconds long"),
+      maxLengthSeconds: z.number().min(1).optional().describe("Only videos at most this many seconds long"),
+      includeSource: z.boolean().optional().default(false).describe("Also return the short-lived raw video file URL for each video"),
+      limit: z.number().int().min(1).max(200).optional().default(25).describe("Videos per page (thumbnail payloads are heavy, keep this modest)"),
+      cursor: cursorSchema,
+    },
+    async ({ adAccountId, titleFilter, minLengthSeconds, maxLengthSeconds, includeSource, limit, cursor }) => {
+      const warnings: MetaWarning[] = [];
+      const baseFields = [
+        "id", "title", "status", "created_time", "updated_time", "length",
+        "picture", "permalink_url",
+        "thumbnails{uri,width,height,scale,is_preferred}",
+      ];
+      if (includeSource) baseFields.push("source");
+
+      const result = await fetchGraph(
+        client,
+        "ad_videos",
+        graphUrl(client, `/${formatAdAccountId(adAccountId)}/advideos`, {
+          fields: baseFields.join(","),
+          limit: typeof limit === "number" ? limit : 25,
+          after: cursor,
+          summary: "total_count",
+          title: titleFilter,
+          // Vérifié en live (Graph v26.0) : minlength/maxlength s'expriment en
+          // millisecondes malgré une doc muette; en secondes, maxlength=120
+          // élimine silencieusement toutes les vidéos.
+          minlength: typeof minLengthSeconds === "number" ? Math.floor(minLengthSeconds * 1000) : undefined,
+          maxlength: typeof maxLengthSeconds === "number" ? Math.ceil(maxLengthSeconds * 1000) : undefined,
+        }),
+        warnings,
+        "Verify the token has ads_read on this ad account.",
+      );
+
+      const videos = dataArray(result).map((video) => normalizeAdVideo(video, Boolean(includeSource)));
+      const summary = isRecord(result?.summary) ? result.summary : undefined;
+
+      return ok({
+        videos,
+        count: videos.length,
+        totalCount: typeof summary?.total_count === "number" ? summary.total_count : undefined,
+        paging: pagingInfo(result),
+        warnings,
+        limitations: [
+          "Thumbnail and picture URLs are publicly served without authentication but carry CDN signatures that expire after a few weeks: re-list to refresh, do not store them as durable links.",
+          "permalink_url points at facebook.com/watch and requires a logged-in session: unsuitable for hotlinking.",
+          includeSource
+            ? "source URLs are short-lived signed download links: use them immediately."
+            : "Call meta_get_video_sources with specific video IDs when you need downloadable source file URLs.",
+        ],
+        nextActions: pagingInfo(result)
+          ? ["Pass the paging cursor as `cursor` to fetch the next page."]
+          : [],
+      });
+    },
+  );
+
+  // ── 18. meta_get_video_sources ────────────────────────────────────
+  server.tool(
+    "meta_get_video_sources",
+    "Resolve fresh download URLs (source) and thumbnails for specific ad videos. Call this at download time: the returned URLs are signed and expire quickly.",
+    {
+      adAccountId: adAccountIdSchema.describe("Ad account that owns the videos, used for scoping and rate limits"),
+      videoIds: z.array(z.string()).min(1).max(10).describe("Video IDs to resolve (at most 10 per call, one Graph request each)"),
+      pageId: z.string().regex(/^\d+$/).optional().describe("Owning Page ID from the ad creative. Allows Page-token fallback even when the user token cannot read the video node."),
+    },
+    async ({ adAccountId, videoIds, pageId: owningPageId }) => {
+      void adAccountId;
+      const warnings: MetaWarning[] = [];
+      // Le paramètre batch `?ids=` est déprécié depuis Graph v26.0 (code 100) :
+      // chaque vidéo se lit sur son propre nœud, d'où le plafond de 10 par appel
+      // (le Worker est limité à 50 sous-requêtes par invocation).
+      const maxIdsPerCall = 10;
+      const requested = Array.isArray(videoIds) ? [...new Set(videoIds.map(String).filter(Boolean))] : [];
+      const ids = requested.slice(0, maxIdsPerCall);
+      if (ids.length === 0) {
+        return ok({
+          videos: [],
+          count: 0,
+          warnings: [{
+            area: "video_sources",
+            message: "No video IDs were provided.",
+            suggestion: "Pass videoIds from meta_list_ad_videos.",
+          }],
+        });
+      }
+      if (requested.length > maxIdsPerCall) {
+        warnings.push({
+          area: "video_sources",
+          message: `Only the first ${maxIdsPerCall} of ${requested.length} video IDs were resolved.`,
+          suggestion: "Call again with the remaining IDs: each video costs one Graph request.",
+        });
+      }
+
+      const videoFields = "id,title,status,length,source,picture,permalink_url,from,thumbnails{uri,width,height,is_preferred}";
+      const fetched: Record<string, unknown>[] = [];
+      for (const videoId of ids) {
+        const result = await fetchGraph(
+          client,
+          `video_${videoId}`,
+          graphUrl(client, `/${encodeURIComponent(videoId)}`, { fields: videoFields }),
+          warnings,
+          "Verify the video ID comes from meta_list_ad_videos and is readable by this token.",
+        );
+        if (result) fetched.push(result);
+        else if (owningPageId) fetched.push({id:videoId});
+      }
+
+      // Vérifié en live : une vidéo hébergée par une Page (post boosté…) ne
+      // livre pas `source` au token du compte, mais le token de la Page :
+      // dérivable du même token quand il administre la Page; le livre.
+      const pageClients = new Map<string, MetaClient | null>();
+      for (const video of fetched) {
+        if (typeof video.source === "string") continue;
+        const from = isRecord(video.from) ? video.from : undefined;
+        const pageId = typeof from?.id === "string" ? from.id : owningPageId;
+        if (!pageId) continue;
+
+        let pageClient = pageClients.get(pageId);
+        if (pageClient === undefined) {
+          const tokenResult = await fetchGraph(
+            client,
+            `page_token_${pageId}`,
+            graphUrl(client, `/${pageId}`, { fields: "access_token" }),
+            warnings,
+            "Resolving a Page-hosted video file requires an admin role on the owning Page and the pages_show_list scope.",
+          );
+          const pageAccessToken = typeof tokenResult?.access_token === "string" ? tokenResult.access_token : undefined;
+          pageClient = pageAccessToken ? new MetaClient(pageAccessToken, client.apiVersion) : null;
+          pageClients.set(pageId, pageClient);
+        }
+        if (!pageClient) continue;
+
+        const retried = await fetchGraph(
+          pageClient,
+          `video_${video.id}_via_page`,
+          graphUrl(pageClient, `/${encodeURIComponent(String(video.id))}`, { fields: videoFields }),
+          warnings,
+          "The Page token could not read this video: verify the Page role covers content access.",
+        );
+        if (retried && typeof retried.source === "string") Object.assign(video, retried);
+      }
+
+      const videos = fetched.map((video) => normalizeAdVideo(video, true));
+      const withoutSource = videos.filter((video) => video.source === undefined).length;
+      if (withoutSource > 0) {
+        warnings.push({
+          area: "video_sources",
+          message: `${withoutSource} video(s) returned no source file even via their owning Page.`,
+          suggestion: "Their thumbnails and metadata remain available; the file requires a token holding an admin role on the owning Page.",
+        });
+      }
+
+      return ok({
+        videos,
+        count: videos.length,
+        warnings,
+        limitations: [
+          "source URLs are signed, publicly fetchable download links that expire quickly: use them immediately and re-call this tool for fresh ones.",
+          "Videos owned by a Facebook Page (boosted posts) are resolved through the Page's own token when this connection administers the Page; otherwise thumbnails and metadata are returned without the file.",
+        ],
+      });
+    },
+  );
 }

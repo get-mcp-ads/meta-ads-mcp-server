@@ -3,6 +3,7 @@
  * Copyright 2026 GetMCPAds. https://www.getmcpads.com
  * SPDX-License-Identifier: Apache-2.0
  */
+import { measurementParams } from "./reporting-context.js";
 // ============================================
 // META GRAPH API CLIENT (READ-ONLY)
 // Meta Graph API client for read-only calls.
@@ -50,6 +51,44 @@ export function assertSafeMetaGraphUrl(rawUrl: string, apiVersion: string): URL 
   return url;
 }
 
+const META_REQUEST_TIMEOUT_MS = 15_000;
+const MAX_PAGINATION_PAGES = 20;
+const MAX_PAGINATION_ROWS = 10_000;
+const MAX_PAGE_ROWS = 1_000;
+const MAX_SEARCH_ENTITY_ROWS = 500;
+
+function trustedMetaGraphUrl(
+  rawUrl: string,
+  apiVersion: string,
+  expectedPathname?: string,
+): URL {
+  let parsed: URL;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    throw new Error("Meta Graph URL is invalid.");
+  }
+
+  const versionSegment = parsed.pathname.split("/").filter(Boolean)[0];
+  if (
+    parsed.protocol !== "https:"
+    || parsed.origin !== META_GRAPH_API_BASE
+    || parsed.username
+    || parsed.password
+    || parsed.port
+    || parsed.hash
+    || versionSegment !== apiVersion
+    || (expectedPathname !== undefined && parsed.pathname !== expectedPathname)
+  ) {
+    throw new Error("Meta Graph URL failed the trusted origin, API-version, and route policy.");
+  }
+
+  // Meta may repeat the same bearer in paging URLs. Keep authority in the
+  // header so a URL is never the credential carrier.
+  parsed.searchParams.delete("access_token");
+  return parsed;
+}
+
 // ============================================
 // TYPES (inlined, so there is no external dependency)
 // ============================================
@@ -89,6 +128,8 @@ export interface MetaApiRequest {
   breakdowns?: string[];
   actionBreakdowns?: string[];
   attributionWindows?: string[];
+  attributionMode?: "account" | "adset" | "explicit";
+  actionReportTime?: "impression" | "conversion" | "mixed";
   filtering?: Array<{ field: string; operator: string; value: unknown }>;
 }
 
@@ -330,11 +371,13 @@ export class MetaClient {
    * Useful for tools that build URLs directly.
    */
   async fetchUrl(url: string): Promise<Record<string, unknown>> {
+    const trustedUrl = trustedMetaGraphUrl(url, this.apiVersion);
     return this.rateLimiter.execute(async () => {
-      const safeUrl = assertSafeMetaGraphUrl(url, this.apiVersion);
-      safeUrl.searchParams.set("access_token", this.accessToken);
-      logger.debug("meta", `fetchUrl: ${safeUrl.origin}${safeUrl.pathname}`);
-      const response = await fetch(safeUrl, { redirect: "error" });
+      logger.debug("meta", `fetchUrl: ${trustedUrl.origin}${trustedUrl.pathname}`);
+      const response = await fetch(trustedUrl, {
+        headers: { Authorization: `Bearer ${this.accessToken}` },
+        signal: AbortSignal.timeout(META_REQUEST_TIMEOUT_MS),
+      redirect: "error"});
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({})) as Record<string, unknown>;
         const errorInfo = (errorData.error ?? {}) as Record<string, unknown>;
@@ -378,11 +421,11 @@ export class MetaClient {
 
       const response = await fetch(url.toString(), {
         method: "GET",
-        redirect: "error",
         headers: {
           "Content-Type": "application/json",
         },
-      });
+        signal: AbortSignal.timeout(META_REQUEST_TIMEOUT_MS),
+      redirect: "error"});
 
       const data = (await response.json()) as Record<string, unknown>;
 
@@ -435,6 +478,8 @@ export class MetaClient {
   async getAdAccounts(): Promise<MetaAdAccount[]> {
     const allAccounts: MetaAdAccount[] = [];
     let nextUrl: string | undefined;
+    let pageCount = 1;
+    const expectedPathname = `/${this.apiVersion}/me/adaccounts`;
 
     // First request
     const firstResponse = await this.request<MetaAdAccountsResponse>(
@@ -446,21 +491,31 @@ export class MetaClient {
       },
     );
 
-    allAccounts.push(...firstResponse.data);
+    allAccounts.push(...firstResponse.data.slice(0, MAX_PAGINATION_ROWS));
     nextUrl = firstResponse.paging?.next;
 
     // Paginate through all accounts
-    while (nextUrl) {
+    while (
+      nextUrl
+      && pageCount < MAX_PAGINATION_PAGES
+      && allAccounts.length < MAX_PAGINATION_ROWS
+    ) {
       const paginatedData = await this.fetchPaginatedUrl<
         MetaAdAccountsResponse & { error?: MetaApiError }
-      >(nextUrl);
+      >(nextUrl, expectedPathname);
 
       if (paginatedData.error) {
         throw new MetaApiException(paginatedData.error);
       }
 
-      allAccounts.push(...paginatedData.data);
+      const remainingRows = MAX_PAGINATION_ROWS - allAccounts.length;
+      allAccounts.push(...paginatedData.data.slice(0, remainingRows));
       nextUrl = paginatedData.paging?.next;
+      pageCount += 1;
+    }
+
+    if (nextUrl) {
+      throw new Error("Meta ad-account pagination exceeded its page or row safety cap.");
     }
 
     return allAccounts;
@@ -497,12 +552,14 @@ export class MetaClient {
 
     const allRows: InsightRow[] = [];
     let nextUrl: string | undefined;
+    let pageCount = 1;
+    const expectedPathname = `/${this.apiVersion}/${accountId}/insights`;
 
     // Build initial params
     const params: Record<string, string> = {
       fields: apiRequest.fields.join(","),
       level: apiRequest.level,
-      limit: String(apiRequest.limit || DEFAULT_LIMIT),
+      limit: String(Math.min(Math.max(apiRequest.limit || DEFAULT_LIMIT, 1), MAX_PAGE_ROWS)),
     };
 
     // Time range or preset
@@ -533,14 +590,8 @@ export class MetaClient {
       params.action_breakdowns = apiRequest.actionBreakdowns.join(",");
     }
 
-    // Attribution windows: use custom if provided, omit to use account default
-    const windows = apiRequest.attributionWindows;
-    if (windows === undefined) {
-      params.action_attribution_windows =
-        "1d_click,7d_click,28d_click,1d_view,1d_ev";
-    } else if (windows.length > 0) {
-      params.action_attribution_windows = windows.join(",");
-    }
+    // Omit windows unless explicitly requested; never silently request five windows.
+    Object.assign(params, measurementParams(apiRequest));
 
     // Filtering (e.g., filter by ad IDs)
     if (apiRequest.filtering && apiRequest.filtering.length > 0) {
@@ -561,21 +612,31 @@ export class MetaClient {
       params,
     );
 
-    allRows.push(...firstResponse.data.map(normalizeInsightRow));
+    allRows.push(...firstResponse.data.slice(0, MAX_PAGINATION_ROWS).map(normalizeInsightRow));
     nextUrl = firstResponse.paging?.next;
 
     // Paginate through all results
-    while (nextUrl) {
+    while (
+      nextUrl
+      && pageCount < MAX_PAGINATION_PAGES
+      && allRows.length < MAX_PAGINATION_ROWS
+    ) {
       const data = await this.fetchPaginatedUrl<
         InsightsApiResponse & { error?: MetaApiError }
-      >(nextUrl);
+      >(nextUrl, expectedPathname);
 
       if (data.error) {
         throw new MetaApiException(data.error);
       }
 
-      allRows.push(...data.data.map(normalizeInsightRow));
+      const remainingRows = MAX_PAGINATION_ROWS - allRows.length;
+      allRows.push(...data.data.slice(0, remainingRows).map(normalizeInsightRow));
       nextUrl = data.paging?.next;
+      pageCount += 1;
+    }
+
+    if (nextUrl) {
+      throw new Error("Meta insights pagination exceeded its page or row safety cap.");
     }
 
     return allRows;
@@ -695,26 +756,38 @@ export class MetaClient {
   ): Promise<InsightRow[]> {
     const allRows: InsightRow[] = [];
     let nextUrl: string | undefined;
+    let pageCount = 1;
+    const expectedPathname = `/${this.apiVersion}/${reportRunId}/insights`;
 
     const firstResponse = await this.request<InsightsApiResponse>(
       `/${reportRunId}/insights`,
       { limit: "500" },
     );
 
-    allRows.push(...firstResponse.data);
+    allRows.push(...firstResponse.data.slice(0, MAX_PAGINATION_ROWS));
     nextUrl = firstResponse.paging?.next;
 
-    while (nextUrl) {
+    while (
+      nextUrl
+      && pageCount < MAX_PAGINATION_PAGES
+      && allRows.length < MAX_PAGINATION_ROWS
+    ) {
       const data = await this.fetchPaginatedUrl<
         InsightsApiResponse & { error?: MetaApiError }
-      >(nextUrl);
+      >(nextUrl, expectedPathname);
 
       if (data.error) {
         throw new MetaApiException(data.error);
       }
 
-      allRows.push(...data.data);
+      const remainingRows = MAX_PAGINATION_ROWS - allRows.length;
+      allRows.push(...data.data.slice(0, remainingRows));
       nextUrl = data.paging?.next;
+      pageCount += 1;
+    }
+
+    if (nextUrl) {
+      throw new Error("Meta async-report pagination exceeded its page or row safety cap.");
     }
 
     return allRows;
@@ -785,16 +858,19 @@ export class MetaClient {
 
     const seenIds = new Set<string>();
     const allStudies: AdStudy[] = [];
+    let remainingPageBudget = MAX_PAGINATION_PAGES;
 
     // Helper to paginate through an ad_studies edge
     const fetchFromEdge = async (endpoint: string) => {
       try {
+        if (remainingPageBudget < 1 || allStudies.length >= MAX_PAGINATION_ROWS) return;
+        remainingPageBudget -= 1;
         const firstResponse = await this.request<AdStudiesResponse>(
           endpoint,
           { fields, limit: "100" },
         );
 
-        for (const study of firstResponse.data) {
+        for (const study of firstResponse.data.slice(0, MAX_PAGINATION_ROWS - allStudies.length)) {
           if (!seenIds.has(study.id)) {
             seenIds.add(study.id);
             allStudies.push(study);
@@ -802,12 +878,18 @@ export class MetaClient {
         }
 
         let nextUrl = firstResponse.paging?.next;
-        while (nextUrl) {
+        const expectedPathname = `/${this.apiVersion}${endpoint}`;
+        while (
+          nextUrl
+          && remainingPageBudget > 0
+          && allStudies.length < MAX_PAGINATION_ROWS
+        ) {
+          remainingPageBudget -= 1;
           const data = await this.fetchPaginatedUrl<
             AdStudiesResponse & { error?: MetaApiError }
-          >(nextUrl);
+          >(nextUrl, expectedPathname);
           if (data.error) break; // Don't throw, just stop paginating
-          for (const study of data.data) {
+          for (const study of data.data.slice(0, MAX_PAGINATION_ROWS - allStudies.length)) {
             if (!seenIds.has(study.id)) {
               seenIds.add(study.id);
               allStudies.push(study);
@@ -947,6 +1029,8 @@ export class MetaClient {
       picture?: string;
     }> = [];
     let nextUrl: string | null = null;
+    let pageCount = 1;
+    const expectedPathname = `/${this.apiVersion}/me/accounts`;
 
     const firstPage = await this.request<{
       data: Array<{
@@ -960,7 +1044,7 @@ export class MetaClient {
       limit: "200",
     });
 
-    for (const p of firstPage.data || []) {
+    for (const p of (firstPage.data || []).slice(0, MAX_PAGINATION_ROWS)) {
       pages.push({
         id: p.id,
         name: p.name,
@@ -969,7 +1053,11 @@ export class MetaClient {
     }
     nextUrl = firstPage.paging?.next || null;
 
-    while (nextUrl) {
+    while (
+      nextUrl
+      && pageCount < MAX_PAGINATION_PAGES
+      && pages.length < MAX_PAGINATION_ROWS
+    ) {
       const data = await this.fetchPaginatedUrl<{
         data: Array<{
           id: string;
@@ -978,9 +1066,9 @@ export class MetaClient {
         }>;
         paging?: { next?: string };
         error?: MetaApiError;
-      }>(nextUrl);
+      }>(nextUrl, expectedPathname);
       if (data.error) break;
-      for (const p of data.data || []) {
+      for (const p of (data.data || []).slice(0, MAX_PAGINATION_ROWS - pages.length)) {
         pages.push({
           id: p.id,
           name: p.name,
@@ -988,7 +1076,11 @@ export class MetaClient {
         });
       }
       nextUrl = data.paging?.next || null;
-      if (pages.length > 1000) break;
+      pageCount += 1;
+    }
+
+    if (nextUrl) {
+      throw new Error("Meta managed-page pagination exceeded its page or row safety cap.");
     }
 
     return pages;
@@ -1099,7 +1191,7 @@ export class MetaClient {
     const fields = options.fields?.length
       ? options.fields
       : defaultFields[entityType];
-    const limit = options.limit || 50;
+    const limit = Math.min(Math.max(options.limit ?? 50, 1), MAX_SEARCH_ENTITY_ROWS);
 
     const params: Record<string, string> = {
       fields: fields!.join(","),
@@ -1132,6 +1224,8 @@ export class MetaClient {
 
     const results: Array<Record<string, unknown>> = [];
     let nextUrl: string | null = null;
+    let pageCount = 1;
+    const expectedPathname = `/${this.apiVersion}/${formattedId}/${edge}`;
 
     const firstPage = await this.request<{
       data: Array<Record<string, unknown>>;
@@ -1142,15 +1236,20 @@ export class MetaClient {
     nextUrl = firstPage.paging?.next || null;
 
     // Paginate if needed (up to limit)
-    while (nextUrl && results.length < limit) {
+    while (nextUrl && results.length < limit && pageCount < MAX_PAGINATION_PAGES) {
       const data = await this.fetchPaginatedUrl<{
         data: Array<Record<string, unknown>>;
         paging?: { next?: string };
         error?: MetaApiError;
-      }>(nextUrl);
+      }>(nextUrl, expectedPathname);
       if (data.error) break;
       results.push(...(data.data || []));
       nextUrl = data.paging?.next || null;
+      pageCount += 1;
+    }
+
+    if (nextUrl && results.length < limit && pageCount >= MAX_PAGINATION_PAGES) {
+      throw new Error("Meta pagination exceeded the 20-page safety cap.");
     }
 
     return results.slice(0, limit);
@@ -1221,15 +1320,15 @@ export class MetaClient {
    * Fetch a full paginated URL (used for "next" page cursors).
    * Rate-limited via the shared limiter.
    */
-  private async fetchPaginatedUrl<T>(url: string): Promise<T> {
+  private async fetchPaginatedUrl<T>(url: string, expectedPathname: string): Promise<T> {
+    const trustedUrl = trustedMetaGraphUrl(url, this.apiVersion, expectedPathname);
     return this.rateLimiter.execute(async () => {
-      const safeUrl = assertSafeMetaGraphUrl(url, this.apiVersion);
-      const response = await fetch(safeUrl, {
-        redirect: "error",
+      const response = await fetch(trustedUrl, {
         headers: {
           Authorization: `Bearer ${this.accessToken}`,
         },
-      });
+        signal: AbortSignal.timeout(META_REQUEST_TIMEOUT_MS),
+      redirect: "error"});
       return (await response.json()) as T;
     });
   }

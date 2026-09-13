@@ -1,22 +1,11 @@
-/**
- * meta-ads-mcp-server: an open-source MCP server for the Facebook (Meta) Ads API.
- * Copyright 2026 GetMCPAds. https://www.getmcpads.com
- * SPDX-License-Identifier: Apache-2.0
- */
-/**
- * Write tools for the Meta Marketing API.
- *
- * These are registered only when `META_ENABLE_WRITES` is set. Reading needs the
- * `ads_read` permission; everything in this file needs `ads_management`.
- *
- * Part of meta-ads-mcp-server: https://github.com/getmcpads-com/meta-ads-mcp-server
- * Managed, multi-platform version: https://www.getmcpads.com
- */
-
+/** Copyright 2026 GetMCPAds. SPDX-License-Identifier: Apache-2.0 */
 import { z } from "zod";
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { MetaConfig } from "../../config/types.js";
-import { DEFAULT_API_VERSION } from "./client.js";
+import type { ToolShape } from "../../tool-quality.js";
+import { toMicroCurrency, toMicros, toMinorUnits, toPlainAmount } from "../../core/money.js";
+const ADS_BASE = "https://googleads.googleapis.com/v25";
+import { registerMetaExtendedWrites, verifyMetaWriteScope } from "./extended-writes.js";
+type Handler = (args: Record<string, unknown>) => Promise<unknown>;
+type Collector = { tool: (n: string, d: string, s: ToolShape, h: Handler) => void };
 
 function ok(data: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
@@ -27,12 +16,12 @@ function ko(message: string) {
 }
 
 /**
- * Every write is a preview until `confirm` is true.
+ * Toute écriture est un aperçu tant que `confirm` n'est pas vrai.
  *
- * An assistant composes these calls, and it can pick the wrong account, the
- * wrong campaign, or the wrong order of magnitude on a budget. A mandatory
- * preview makes the mistake visible before it costs money, and gives a human
- * the stopping point the protocol does not guarantee on its own.
+ * C'est un assistant qui compose ces appels : il peut se tromper de compte, de
+ * campagne ou d'ordre de grandeur sur un budget. Un aperçu obligatoire rend
+ * l'erreur visible avant qu'elle ne coûte de l'argent, et donne à l'humain le
+ * point d'arrêt que le protocole ne garantit pas.
  */
 function preview(action: string, details: Record<string, unknown>) {
   return ok({
@@ -50,29 +39,8 @@ const confirmSchema = z
   .optional()
   .describe("Set to true to actually apply the change. Without it, the tool only previews.");
 
-/**
- * Meta expects budgets in minor units, and the factor depends on the currency.
- * The yen and the won have no subunit, so sending 1250 for 12.50 there would
- * multiply the spend by a hundred.
- */
-const ZERO_DECIMAL = new Set([
-  "JPY", "KRW", "CLP", "ISK", "VND", "UGX", "PYG", "RWF", "XOF",
-  "XAF", "XPF", "BIF", "DJF", "GNF", "KMF", "MGA", "VUV",
-]);
-
-export function toMinorUnits(amount: number, currency: string): number {
-  const code = currency.trim().toUpperCase();
-  if (!/^[A-Z]{3}$/.test(code)) {
-    throw new Error(`Expected a three letter currency code, received "${currency}".`);
-  }
-  if (!Number.isFinite(amount) || amount <= 0) {
-    throw new Error(`Expected a positive amount, received "${amount}".`);
-  }
-  return Math.round(amount * (ZERO_DECIMAL.has(code) ? 1 : 100));
-}
-
-async function request(url: string, init: RequestInit, context: string): Promise<unknown> {
-  const response = await fetch(url, init);
+async function request(url: string, init: RequestInit, contexte: string): Promise<unknown> {
+  const response = await fetch(url, { ...init, redirect: "error" });
   const body = await response.text();
   let parsed: unknown;
   try {
@@ -81,25 +49,29 @@ async function request(url: string, init: RequestInit, context: string): Promise
     parsed = body;
   }
   if (!response.ok) {
-    const detail = typeof parsed === "string" ? parsed : JSON.stringify(parsed);
-    throw new Error(`${context}: ${detail.slice(0, 300)}`);
+    if (url.startsWith(ADS_BASE + "/")) {
+      const error = (parsed as { error?: { message?: string; details?: { errors?: { errorCode?: unknown; message?: string; location?: unknown }[] }[] } })?.error;
+      const details = error?.details?.flatMap(d => d.errors ?? []).map(e => ({ code: e.errorCode, message: e.message, location: e.location }));
+      throw new Error(`${contexte}: ${JSON.stringify(details?.length ? details : error?.message ?? parsed).slice(0, 3000)}`);
+    }
+    throw new Error(`${contexte} : ${typeof parsed === "string" ? parsed.slice(0, 300) : JSON.stringify(parsed).slice(0, 300)}`);
   }
   return parsed;
 }
 
-export function registerMetaWrites(server: McpServer, config: MetaConfig): void {
-  const version = config.apiVersion || DEFAULT_API_VERSION;
+export function registerMetaWrites(c: Collector, config: Record<string, string>): void {
+  registerMetaExtendedWrites(c, config);
+  const destination = c;
+  c = { tool(n,d,s,h) { destination.tool(n,d,s,async raw => {
+    try { const a=z.object(s).strict().parse(raw); if(a.confirm) await verifyMetaWriteScope(config,a); return await h(a); }
+    catch(e) { return ko((e as Error).message); }
+  }); } };
+  const version = config.apiVersion || "v26.0";
   const graph = (path: string) => `https://graph.facebook.com/${version}/${path}`;
-  const form = (fields: Record<string, string>) => ({
-    method: "POST" as const,
-    headers: { "content-type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ ...fields, access_token: config.accessToken }),
-  });
 
-  // ── Status: pause / reactivate ────────────────────────────────────
-  const statusTool = (name: string, target: "campaign" | "ad set" | "ad", param: string) =>
-    server.tool(
-      name,
+  const statusTool = (nom: string, target: "campaign" | "ad set" | "ad", param: string) =>
+    c.tool(
+      nom,
       `Pause or reactivate a Meta ${target}. Previews by default: without confirm: true, ` +
         `the tool describes the change without applying it.`,
       {
@@ -108,12 +80,20 @@ export function registerMetaWrites(server: McpServer, config: MetaConfig): void 
         status: z.enum(["ACTIVE", "PAUSED"]).describe("ACTIVE reactivates, PAUSED stops delivery."),
         confirm: confirmSchema,
       },
-      async (a: Record<string, unknown>) => {
+      async (a) => {
         const id = String(a[param]);
         const { status, confirm } = a as Record<string, string | boolean>;
-        if (!confirm) return preview(name, { target: id, newStatus: status });
-        const result = await request(graph(id), form({ status: String(status) }), `Meta ${target} status`);
-        return ok({ applied: true, action: name, result });
+        if (!confirm) return preview(nom, { target: id, newStatus: status });
+        const result = await request(
+          graph(id),
+          {
+            method: "POST",
+            headers: { "content-type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({ status: String(status), access_token: config.accessToken }),
+          },
+          `Meta ${target} status`,
+        );
+        return ok({ applied: true, action: nom, result: result });
       },
     );
 
@@ -121,38 +101,13 @@ export function registerMetaWrites(server: McpServer, config: MetaConfig): void 
   statusTool("meta_update_adset_status", "ad set", "adSetId");
   statusTool("meta_update_ad_status", "ad", "adId");
 
-  // ── Rename ────────────────────────────────────────────────────────
-  const renameTool = (name: string, target: "campaign" | "ad set" | "ad", param: string) =>
-    server.tool(
-      name,
-      `Rename a Meta ${target}. The name is the only thing that changes. Previews by default.`,
-      {
-        [param]: z.string().describe(`${target} ID.`),
-        adAccountId: z.string().describe("Owning ad account (act_… or bare ID)."),
-        name: z.string().min(1).max(400).describe("New name. This is the only thing the call changes."),
-        confirm: confirmSchema,
-      },
-      async (a: Record<string, unknown>) => {
-        const id = String(a[param]);
-        const { name: newName, confirm } = a as Record<string, string | boolean>;
-        if (!confirm) return preview(name, { target: id, newName });
-        const result = await request(graph(id), form({ name: String(newName) }), `Meta ${target} rename`);
-        return ok({ applied: true, action: name, result });
-      },
-    );
-
-  renameTool("meta_rename_campaign", "campaign", "campaignId");
-  renameTool("meta_rename_adset", "ad set", "adSetId");
-  renameTool("meta_rename_ad", "ad", "adId");
-
-  // ── Create campaign (always paused) ───────────────────────────────
-  server.tool(
+  c.tool(
     "meta_create_campaign",
     "Create a Meta campaign. It is always created PAUSED and there is no option to create " +
       "it active. Previews by default.",
     {
       adAccountId: z.string().describe("Ad account, act_… or bare ID."),
-      name: z.string().min(1).max(400).describe("Campaign name."),
+      name: z.string().describe("Name to set. This is the only thing the call changes."),
       objective: z
         .enum([
           "OUTCOME_TRAFFIC",
@@ -167,33 +122,40 @@ export function registerMetaWrites(server: McpServer, config: MetaConfig): void 
         .array(z.enum(["NONE", "HOUSING", "EMPLOYMENT", "CREDIT", "ISSUES_ELECTIONS_POLITICS"]))
         .optional()
         .describe("Required by Meta. Defaults to none."),
+      adsetBudgetSharing: z.boolean().default(false).describe("Explicit ad set budget sharing choice required by Meta. Defaults to false."),
       confirm: confirmSchema,
     },
-    async (a: Record<string, unknown>) => {
-      const { adAccountId, name, objective, specialAdCategories, confirm } = a;
+    async (a) => {
+      const { adAccountId, name, objective, specialAdCategories, adsetBudgetSharing, confirm } = a as Record<
+        string,
+        unknown
+      >;
       const act = String(adAccountId).startsWith("act_") ? String(adAccountId) : `act_${adAccountId}`;
       const categories = Array.isArray(specialAdCategories) ? specialAdCategories : [];
       if (!confirm) {
-        return preview("meta_create_campaign", {
-          adAccount: act, name, objective, specialAdCategories: categories, status: "PAUSED",
-        });
+        return preview("meta_create_campaign", { adAccount: act, name, objective, specialAdCategories: categories, adsetBudgetSharing, status: "PAUSED" });
       }
       const result = await request(
         graph(`${act}/campaigns`),
-        form({
-          name: String(name),
-          objective: String(objective),
-          status: "PAUSED",
-          special_ad_categories: JSON.stringify(categories),
-        }),
+        {
+          method: "POST",
+          headers: { "content-type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            name: String(name),
+            objective: String(objective),
+            status: "PAUSED",
+            special_ad_categories: JSON.stringify(categories),
+            is_adset_budget_sharing_enabled: String(adsetBudgetSharing),
+            access_token: config.accessToken,
+          }),
+        },
         "Meta campaign creation",
       );
       return ok({ applied: true, action: "meta_create_campaign", status: "PAUSED", result });
     },
   );
 
-  // ── Budgets ───────────────────────────────────────────────────────
-  server.tool(
+  c.tool(
     "meta_update_adset_budget",
     "Change the daily or lifetime budget of a Meta ad set. Amount in the account currency " +
       "(12.50 for 12.50 EUR). Meta expects minor units, the conversion is done here. " +
@@ -201,13 +163,13 @@ export function registerMetaWrites(server: McpServer, config: MetaConfig): void 
     {
       adSetId: z.string().describe("Ad set ID."),
       adAccountId: z.string().describe("Owning ad account, with or without the act_ prefix."),
-      currency: z.string().length(3).describe("Account currency code, for example EUR. Read it with meta_list_ad_accounts."),
-      dailyBudget: z.number().positive().optional().describe("Daily budget, in the account currency."),
+      currency: z.string().regex(/^[A-Z]{3}$/).describe("Actual account currency. Required to avoid incorrect unit conversion."),
+      dailyBudget: z.number().positive().optional().describe("Daily budget."),
       lifetimeBudget: z.number().positive().optional().describe("Lifetime budget, mutually exclusive with the daily budget."),
       confirm: confirmSchema,
     },
-    async (a: Record<string, unknown>) => {
-      const { adSetId, currency, dailyBudget, lifetimeBudget, confirm } = a;
+    async (a) => {
+      const { adSetId, currency, dailyBudget, lifetimeBudget, confirm } = a as Record<string, string | number | boolean>;
       if (dailyBudget === undefined && lifetimeBudget === undefined) {
         return ko("Provide either dailyBudget or lifetimeBudget.");
       }
@@ -215,24 +177,55 @@ export function registerMetaWrites(server: McpServer, config: MetaConfig): void 
         return ko("dailyBudget and lifetimeBudget are mutually exclusive; Meta rejects both together.");
       }
       const field = dailyBudget !== undefined ? "daily_budget" : "lifetime_budget";
-      const amount = Number(dailyBudget ?? lifetimeBudget);
-      let minor: number;
-      try {
-        minor = toMinorUnits(amount, String(currency));
-      } catch (error) {
-        return ko(error instanceof Error ? error.message : String(error));
-      }
+      const minorUnits = toMinorUnits(Number(dailyBudget ?? lifetimeBudget), String(currency));
       if (!confirm) {
-        return preview("meta_update_adset_budget", {
-          adSet: adSetId, field, amount, currency, inMinorUnits: minor,
-        });
+        return preview("meta_update_adset_budget", { adSet: adSetId, field, amount: dailyBudget ?? lifetimeBudget, inMinorUnits: minorUnits });
       }
-      const result = await request(graph(String(adSetId)), form({ [field]: String(minor) }), "Meta ad set budget");
-      return ok({ applied: true, action: "meta_update_adset_budget", result });
+      const result = await request(
+        graph(String(adSetId)),
+        {
+          method: "POST",
+          headers: { "content-type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({ [field]: String(minorUnits), access_token: config.accessToken }),
+        },
+        "Meta budget",
+      );
+      return ok({ applied: true, action: "meta_update_adset_budget", result: result });
     },
   );
 
-  server.tool(
+  const renameTool = (nom: string, target: "campaign" | "ad set" | "ad", param: string) =>
+    c.tool(
+      nom,
+      `Rename a Meta ${target}. The name is the only thing that changes. Previews by default.`,
+      {
+        [param]: z.string().describe(`${target} ID.`),
+        adAccountId: z.string().describe("Owning ad account (act_… or bare ID)."),
+        name: z.string().min(1).max(400).describe("New name. This is the only thing the call changes."),
+        confirm: confirmSchema,
+      },
+      async (a) => {
+        const id = String(a[param]);
+        const { name, confirm } = a as Record<string, string | boolean>;
+        if (!confirm) return preview(nom, { target: id, newName: name });
+        const result = await request(
+          graph(id),
+          {
+            method: "POST",
+            headers: { "content-type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({ name: String(name), access_token: config.accessToken }),
+          },
+          `Meta ${target} rename`,
+        );
+        return ok({ applied: true, action: nom, result });
+      },
+    );
+
+  renameTool("meta_rename_campaign", "campaign", "campaignId");
+  renameTool("meta_rename_adset", "ad set", "adSetId");
+  renameTool("meta_rename_ad", "ad", "adId");
+
+  c.tool(
     "meta_update_campaign_budget",
     "Change the budget of a Meta campaign that holds its budget at campaign level (Advantage " +
       "campaign budget). On a campaign without one, Meta refuses and the ad set budget is the " +
@@ -240,13 +233,13 @@ export function registerMetaWrites(server: McpServer, config: MetaConfig): void 
     {
       campaignId: z.string().describe("Campaign ID."),
       adAccountId: z.string().describe("Owning ad account (act_… or bare ID)."),
-      currency: z.string().length(3).describe("Account currency code, for example EUR. Read it with meta_list_ad_accounts."),
+      currency: z.string().length(3).describe("Account currency code, for example EUR. Read it with meta_get_ad_accounts."),
       dailyBudget: z.number().positive().optional().describe("New daily budget, in the account currency."),
       lifetimeBudget: z.number().positive().optional().describe("New lifetime budget, in the account currency."),
       confirm: confirmSchema,
     },
-    async (a: Record<string, unknown>) => {
-      const { campaignId, currency, dailyBudget, lifetimeBudget, confirm } = a;
+    async (a) => {
+      const { campaignId, currency, dailyBudget, lifetimeBudget, confirm } = a as Record<string, string | number | boolean>;
       if (dailyBudget === undefined && lifetimeBudget === undefined) {
         return ko("Provide either dailyBudget or lifetimeBudget.");
       }
@@ -255,24 +248,24 @@ export function registerMetaWrites(server: McpServer, config: MetaConfig): void 
       }
       const field = dailyBudget !== undefined ? "daily_budget" : "lifetime_budget";
       const amount = Number(dailyBudget ?? lifetimeBudget);
-      let minor: number;
-      try {
-        minor = toMinorUnits(amount, String(currency));
-      } catch (error) {
-        return ko(error instanceof Error ? error.message : String(error));
-      }
+      const minor = toMinorUnits(amount, String(currency));
       if (!confirm) {
-        return preview("meta_update_campaign_budget", {
-          campaign: campaignId, field, amount, currency, inMinorUnits: minor,
-        });
+        return preview("meta_update_campaign_budget", { campaign: campaignId, field, amount, currency, inMinorUnits: minor });
       }
-      const result = await request(graph(String(campaignId)), form({ [field]: String(minor) }), "Meta campaign budget");
+      const result = await request(
+        graph(String(campaignId)),
+        {
+          method: "POST",
+          headers: { "content-type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({ [field]: String(minor), access_token: config.accessToken }),
+        },
+        "Meta campaign budget",
+      );
       return ok({ applied: true, action: "meta_update_campaign_budget", result });
     },
   );
 
-  // ── Schedule ──────────────────────────────────────────────────────
-  server.tool(
+  c.tool(
     "meta_update_adset_schedule",
     "Change the start or end time of a Meta ad set. Times are ISO 8601 with an offset, for " +
       "example 2026-09-01T00:00:00+0200. Previews by default.",
@@ -283,15 +276,21 @@ export function registerMetaWrites(server: McpServer, config: MetaConfig): void 
       endTime: z.string().optional().describe("End time, ISO 8601 with an offset, for example 2026-09-30T23:59:59+0200."),
       confirm: confirmSchema,
     },
-    async (a: Record<string, unknown>) => {
+    async (a) => {
       const { adSetId, startTime, endTime, confirm } = a as Record<string, string | boolean>;
       if (!startTime && !endTime) return ko("Provide startTime, endTime, or both.");
-      const fields: Record<string, string> = {};
-      if (startTime) fields.start_time = String(startTime);
-      if (endTime) fields.end_time = String(endTime);
+      const body: Record<string, string> = { access_token: config.accessToken };
+      if (startTime) body.start_time = String(startTime);
+      if (endTime) body.end_time = String(endTime);
       if (!confirm) return preview("meta_update_adset_schedule", { adSet: adSetId, startTime, endTime });
-      const result = await request(graph(String(adSetId)), form(fields), "Meta ad set schedule");
+      const result = await request(
+        graph(String(adSetId)),
+        { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(body) },
+        "Meta ad set schedule",
+      );
       return ok({ applied: true, action: "meta_update_adset_schedule", result });
     },
   );
 }
+
+// ────────────────────────────── TikTok ──────────────────────────────

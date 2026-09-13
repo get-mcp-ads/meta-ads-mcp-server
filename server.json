@@ -2,8 +2,8 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "com.getmcpads/meta-ads",
   "title": "Meta Ads",
-  "description": "Meta (Facebook and Instagram) Ads: 34 read tools and 10 write tools that preview first.",
-  "version": "1.0.2",
+  "description": "Meta Ads: 39 read tools and 23 opt-in writes with previews and confirmation.",
+  "version": "1.1.0",
   "websiteUrl": "https://www.getmcpads.com/tools/meta-ads",
   "repository": {
     "url": "https://github.com/getmcpads-com/meta-ads-mcp-server",
@@ -14,7 +14,7 @@
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@getmcpads/meta-ads-mcp-server",
-      "version": "1.0.2",
+      "version": "1.1.0",
       "transport": {
         "type": "stdio"
       },
@@ -27,7 +27,7 @@
         },
         {
           "name": "META_ENABLE_WRITES",
-          "description": "Set to 1 to register the 10 write tools. They need ads_management.",
+          "description": "Set to 1 to expose 23 write tools. Default calls preview; confirm:true applies changes.",
           "isRequired": false,
           "isSecret": false
         },

@@ -1,0 +1,71 @@
+{
+  "manifest_version": "0.3",
+  "name": "meta-ads-mcp-server",
+  "display_name": "Meta Ads by Get MCP Ads",
+  "version": "1.1.0",
+  "description": "Meta Ads MCP server: 39 read tools, 23 opt-in preview-first writes.",
+  "author": {
+    "name": "GetMCPAds",
+    "url": "https://www.getmcpads.com"
+  },
+  "homepage": "https://www.getmcpads.com/tools/meta-ads",
+  "documentation": "https://github.com/getmcpads-com/meta-ads-mcp-server#readme",
+  "support": "https://github.com/getmcpads-com/meta-ads-mcp-server/issues",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/getmcpads-com/meta-ads-mcp-server"
+  },
+  "icon": "icon.png",
+  "license": "Apache-2.0",
+  "server": {
+    "type": "node",
+    "entry_point": "dist/cli.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/dist/cli.js"
+      ],
+      "env": {
+        "META_ACCESS_TOKEN": "${user_config.meta_access_token}",
+        "META_ENABLE_WRITES": "${user_config.meta_enable_writes}",
+        "META_API_VERSION": "${user_config.meta_api_version}"
+      }
+    }
+  },
+  "user_config": {
+    "meta_access_token": {
+      "type": "string",
+      "title": "Meta Access Token",
+      "description": "Meta access token with at least the ads_read permission.",
+      "required": true,
+      "sensitive": true
+    },
+    "meta_enable_writes": {
+      "type": "string",
+      "title": "Meta Enable Writes",
+      "description": "Set to 1 to expose 23 write tools. Default calls preview; confirm:true applies changes.",
+      "required": false,
+      "sensitive": false,
+      "default": "0"
+    },
+    "meta_api_version": {
+      "type": "string",
+      "title": "Meta Api Version",
+      "description": "Graph API version. Defaults to v26.0.",
+      "required": false,
+      "sensitive": false,
+      "default": ""
+    }
+  },
+  "tools_generated": true,
+  "compatibility": {
+    "platforms": [
+      "darwin",
+      "win32",
+      "linux"
+    ],
+    "runtimes": {
+      "node": ">=18"
+    }
+  }
+}

@@ -1,3 +1,4 @@
+import { installToolQuality } from "./tool-quality.js";
 /**
  * meta-ads-mcp-server: an open-source MCP server for the Facebook (Meta) Ads API.
  * Copyright 2026 GetMCPAds. https://www.getmcpads.com
@@ -8,7 +9,7 @@ import type { ServerConfig } from "./config/types.js";
 import { registerMeta } from "./platforms/meta/index.js";
 import { logger } from "./core/logger.js";
 
-export const PACKAGE_VERSION = "1.0.2";
+export const PACKAGE_VERSION = "1.1.0";
 
 /**
  * Create and configure the MCP server.
@@ -18,6 +19,9 @@ export function createServer(config: ServerConfig): McpServer {
     {
       name: "meta-ads-mcp",
       version: PACKAGE_VERSION,
+      title: "Meta Ads",
+      websiteUrl: "https://www.getmcpads.com/tools/meta-ads",
+      icons: [{ src: "https://mcp.getmcpads.com/icon.svg", mimeType: "image/svg+xml" }],
     },
     {
       capabilities: {
@@ -27,6 +31,7 @@ export function createServer(config: ServerConfig): McpServer {
     },
   );
 
+  installToolQuality(server);
   if (config.meta) {
     registerMeta(server, config.meta);
     logger.system(

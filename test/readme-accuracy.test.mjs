@@ -16,10 +16,11 @@ async function introspect() {
   });
   const client = new Client({ name: "readme-check", version: "1" }, { capabilities: {} });
   await client.connect(transport);
-  const tools = (await client.listTools()).tools.map((t) => t.name);
+  const definitions = (await client.listTools()).tools;
+  const tools = definitions.map((t) => t.name);
   const resources = (await client.listResources()).resources.map((r) => r.uri);
   await client.close();
-  return { tools, resources };
+  return { tools, resources, definitions };
 }
 
 const README = readFileSync(new URL("../README.md", import.meta.url), "utf8");
@@ -51,12 +52,12 @@ test("README documents every resource the server exposes", async () => {
 });
 
 test("README tool counts match reality", async () => {
-  const { tools, resources } = await introspect();
-  const writes = tools.filter((t) => /^meta_(create|update|rename)_/.test(t));
+  const { tools, resources, definitions } = await introspect();
+  const writes = definitions.filter(t => !t.annotations.readOnlyHint).map(t => t.name);
   const reads = tools.filter((t) => !writes.includes(t));
 
-  assert.equal(reads.length, 34, "read tool count changed, update the README");
-  assert.equal(writes.length, 10, "write tool count changed, update the README");
+  assert.equal(reads.length, 39, "read tool count changed, update the README");
+  assert.equal(writes.length, 23, "write tool count changed, update the README");
   assert.equal(resources.length, 7, "resource count changed, update the README");
 
   assert.match(README, new RegExp(`\\*\\*${reads.length} read tools\\*\\*`));

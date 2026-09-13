@@ -9,6 +9,8 @@ import { BREAKDOWN_CATALOG } from "./breakdown-catalog.js";
 import { DIMENSION_CATALOG } from "./dimension-catalog.js";
 
 const READ_ONLY_TOOLS = [
+  "meta_get_adset_configuration",
+  "meta_get_catalog_batch_status",
   "meta_health_check",
   "meta_list_ad_accounts",
   "meta_get_account_details",
@@ -43,6 +45,9 @@ const READ_ONLY_TOOLS = [
   "meta_get_insights_raw",
   "meta_search_targeting_options",
   "meta_get_ad_preview",
+  "meta_list_ad_images",
+  "meta_list_ad_videos",
+  "meta_get_video_sources",
 ] as const;
 
 function jsonResource(uri: string, data: unknown) {
@@ -349,11 +354,11 @@ export function registerMetaResources(server: McpServer, enableWrites = false): 
         },
         {
           scope: "catalog_management",
-          reason: "Optional for GET-only Product Catalog/Product Item reads when Meta requires catalog-level access. This server does not create, update, or delete catalog assets.",
+          reason: "Optional for GET-only Product Catalog/Product Item reads when Meta requires catalog-level access. Catalog mutations require explicit write opt-in, the corresponding permission and confirmation.",
         },
       ],
       write_scopes_to_avoid_for_this_server: [
-        "ads_management",
+        ...(!enableWrites ? ["ads_management"] : []),
         "pages_manage_posts",
         "pages_manage_metadata",
         "instagram_content_publish",
@@ -369,7 +374,7 @@ export function registerMetaResources(server: McpServer, enableWrites = false): 
       data_handling_notes: [
         "Tool responses redact access_token fields and access_token query parameters.",
         "Permission failures are returned as warnings for discovery tools when a partial response is still useful.",
-        "No write or mutation endpoints are registered by this server.",
+        enableWrites ? "Write tools are enabled; each mutation requires confirm:true after preview." : "Write tools are disabled on this instance.",
       ],
     },
   ));

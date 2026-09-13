@@ -1,8 +1,8 @@
 {
   "name": "@getmcpads/meta-ads-mcp-server",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "mcpName": "com.getmcpads/meta-ads",
-  "description": "Open-source MCP server for the Meta (Facebook & Instagram) Ads Marketing API. 34 read tools and 10 write tools that preview before they apply, 190 metrics, 56 breakdowns. Self-hosted, bring your own token.",
+  "description": "Meta Ads MCP server: 39 read tools, 23 opt-in preview-first writes.",
   "license": "Apache-2.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -21,10 +21,13 @@
     "dev": "tsx watch src/cli.ts",
     "doctor": "node scripts/doctor.mjs",
     "start": "node dist/cli.js",
-    "test": "tsx --test test/*.test.mjs",
+    "test": "tsx --test test/*.test.mjs && npm run test:unit",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run typecheck && npm run build && node scripts/generate-catalog.mjs && npm test",
+    "test:unit": "vitest run",
+    "catalog": "npm run build && node scripts/generate-catalog.mjs",
+    "bundle": "npm run catalog && node scripts/build-mcpb.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",
@@ -38,7 +41,8 @@
     "tsup": "^8.0.0",
     "tsx": "^4.0.0",
     "typescript": "^5.7.0",
-    "typescript-eslint": "^8.0.0"
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^3.2.7"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -47,7 +51,10 @@
     "dist/",
     "LICENSE",
     "NOTICE",
-    "README.md"
+    "README.md",
+    "server-card.json",
+    "server.json",
+    "CHANGELOG.md"
   ],
   "keywords": [
     "mcp",
