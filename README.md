@@ -16,10 +16,11 @@ npx -y @getmcpads/meta-ads-mcp-server
 
 Also listed in the [MCP Registry](https://registry.modelcontextprotocol.io) as **`com.getmcpads/meta-ads`**, so clients that read the registry can install it by name.
 
-> **Prefer not to run it yourself?** [getmcpads.com](https://www.getmcpads.com) is the hosted
-> version of this server, with Meta Ads alongside Google Ads, TikTok Ads, Pinterest Ads, GA4 and
-> Search Console behind a single endpoint, hosted OAuth, and cross-platform reporting.
-> Same tools, same safety model, no setup.
+> **Prefer a hosted connection?** [Get MCP Ads for Meta Ads](https://www.getmcpads.com/tools/meta-ads?utm_source=github&utm_medium=readme&utm_campaign=meta_ads_hosted)
+> handles the server and OAuth flow. Create a workspace, connect the platform and
+> select the accounts or properties your assistant may read. Free is read only;
+> paid limits and supported writes are described on the site. Hosted and npm
+> releases can differ: check the current catalogue for the operation you need.
 
 ---
 
@@ -56,7 +57,7 @@ Here is an honest comparison, because the right choice depends on what you need.
 | Hosting | **You host it.** stdio, local process | Meta-hosted, remote | Hosted for you |
 | Data path | **Direct to the Graph API.** No intermediary | Through Meta's endpoint | Through our gateway |
 | Auth | You bring a token, which is more setup (see below) | Meta Business OAuth, 2 clicks | Hosted OAuth |
-| Tools | **44** (34 read + 10 write) | 29 | 44, plus 5 other platforms |
+| Tools | **44** (34 read + 10 write) | 29 | [Current hosted catalogue](https://www.getmcpads.com/tools/meta-ads) |
 | Writes | **Preview first**, applied only on `confirm: true` | Applied directly | Preview first |
 | Metric compatibility | **Query planner splits incompatible requests** | None | Same planner |
 | Auditable | **Yes.** Apache-2.0, read every line | No | This server, audited |
@@ -335,14 +336,20 @@ Full policy and reporting instructions: [SECURITY.md](SECURITY.md).
 
 ## Looking for a managed, multi-platform version?
 
-This server does one platform, on your machine, with your token. That is on purpose.
+[Try hosted Meta Ads](https://www.getmcpads.com/tools/meta-ads?utm_source=github&utm_medium=readme&utm_campaign=meta_ads_hosted) if you want to use this source without operating a local server.
+Get MCP Ads also connects advertising, Search Console and GA4 through one MCP URL.
+Source availability and plan limits are listed on the site; connecting an account is still required.
 
-If you'd rather not run it yourself, or you need Facebook Ads **alongside Google Ads,
-TikTok Ads, Pinterest Ads, GA4 and Search Console** behind one endpoint, with hosted OAuth
-and cross-platform reporting, that's what we build at **[getmcpads.com](https://www.getmcpads.com)**.
+1. Follow the [Meta Ads connection guide](https://www.getmcpads.com/guides/sources/meta-ads).
+2. Select the account or property your assistant may read.
+3. Connect [Claude](https://www.getmcpads.com/guides/setup/claude),
+   [ChatGPT](https://www.getmcpads.com/guides/setup/chatgpt) or
+   [Codex](https://www.getmcpads.com/guides/setup/codex).
+4. Try a read-only review: “Compare campaign results and investigate frequency alongside CTR. State missing data and do not change anything.”
 
-Same philosophy, less plumbing. This project stays open source and independently useful
-either way.
+See the [current hosted tool catalogue](https://www.getmcpads.com/tools/meta-ads)
+and [pricing](https://www.getmcpads.com/pricing) before choosing a paid plan.
+This Apache 2.0 adapter remains independently useful with your own credentials.
 
 ---
 
