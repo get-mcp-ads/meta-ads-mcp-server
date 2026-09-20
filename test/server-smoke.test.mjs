@@ -38,7 +38,7 @@ test("Meta Ads MCP exposes core tools and resources over stdio", async () => {
     await client.connect(transport, { timeout: 15000 });
     const tools = await client.listTools(undefined, { timeout: 15000 });
     const toolNames = tools.tools.map((tool) => tool.name);
-    assert.equal(toolNames.length, 39);
+    assert.equal(toolNames.length, 41);
 
     for (const name of [
       "meta_health_check",
@@ -67,7 +67,7 @@ test("Meta Ads MCP exposes core tools and resources over stdio", async () => {
 
     const manifest = await client.readResource({ uri: "meta://manifest" }, { timeout: 15000 });
     const manifestPayload = JSON.parse(manifest.contents[0].text);
-    assert.equal(manifestPayload.tools.length, 39);
+    assert.equal(manifestPayload.tools.length, 41);
     assert.ok(manifestPayload.tools.includes("meta_get_insights_raw"));
   } finally {
     await transport.close().catch(() => undefined);

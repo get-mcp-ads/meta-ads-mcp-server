@@ -1,14 +1,14 @@
 import { PARAMETER_DESCRIPTIONS } from "./parameter-descriptions.js";
 /** Copyright 2026 GetMCPAds. SPDX-License-Identifier: Apache-2.0 */
 /** A stable structured envelope for the heterogeneous provider responses.
- * The original MCP content and MCP Apps payload remain unchanged. Provider
+ * The original MCP content remains unchanged. Provider
  * fields deliberately remain open: native query tools accept selected fields.
  */
 export const RESULT_SCHEMA = {
   type: "object" as const,
   properties: {
     result: {
-      description: "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result.",
+      description: "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query.",
       type: ["object", "array", "string", "number", "boolean", "null"],
     },
   },

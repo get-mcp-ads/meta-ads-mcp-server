@@ -48,6 +48,8 @@ const READ_ONLY_TOOLS = [
   "meta_list_ad_images",
   "meta_list_ad_videos",
   "meta_get_video_sources",
+  "meta_get_entity_configuration",
+  "meta_get_uploaded_video",
 ] as const;
 
 function jsonResource(uri: string, data: unknown) {

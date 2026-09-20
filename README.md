@@ -1,8 +1,10 @@
 # meta-ads-mcp-server
 
+
+
 [![CI](https://github.com/getmcpads-com/meta-ads-mcp-server/actions/workflows/ci.yml/badge.svg)](https://github.com/getmcpads-com/meta-ads-mcp-server/actions/workflows/ci.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![Node](https://img.shields.io/badge/node-%E2%89%A518-brightgreen.svg)](package.json)
+[![Node](https://img.shields.io/badge/node-%E2%89%A522.12-brightgreen.svg)](package.json)
 
 An open-source [Model Context Protocol](https://modelcontextprotocol.io) server for the
 **Facebook (Meta) Ads Marketing API**. It lets Claude, ChatGPT, Cursor or any MCP client
@@ -24,11 +26,29 @@ Also listed in the [MCP Registry](https://registry.modelcontextprotocol.io) as *
 
 ---
 
+
+## Current source release
+
+Version 2.0.0 requires **Node.js 22.12 or newer**. CI checks Node 22 and 24.
+This source catalog contains **41 read tools** and **23 write tools**.
+Native API tools are included. Hosted creative galleries, visual editors, Launcher storage and MCP Apps UI are excluded.
+This is a major source update because Node 18 and 20 are no longer supported. Meta campaign and budget tools also use stricter validation; inspect tools/list before reusing saved arguments.
+Source commits, npm releases and MCP Registry publication are separate steps. Until this version is published, use the source installation below to run this exact revision.
+
+```bash
+git clone https://github.com/getmcpads-com/meta-ads-mcp-server.git
+cd meta-ads-mcp-server
+npm ci
+npm run build
+```
+
+Configure your MCP client to run `node` with the absolute path to `dist/cli.js` and the environment variables documented below.
+
 ## What you get
 
 | | |
 |---|---|
-| **39 read tools** | Campaigns, ad sets, ads, creatives, audiences, pixels, catalogs, Pages, Instagram, activity logs, A/B tests and lift studies |
+| **41 read tools** | Campaigns, ad sets, ads, creatives, audiences, pixels, catalogs, Pages, Instagram, activity logs, A/B tests and lift studies |
 | **23 write tools** | Off by default. Status, budgets, schedules, renames, campaign creation. Each one **previews before it applies** |
 | **190 metrics** | Including derived ones computed client-side (ROAS, CPA, frequency, hook rate, attribution-window views) |
 | **56 breakdowns · 90 dimensions** | With a compatibility matrix that catches invalid combinations *before* they hit the API |
@@ -44,32 +64,6 @@ several valid API calls and merges the results** instead of failing.
 `meta_validate_query` lets the model check a combination before spending a call on it.
 That is the difference between an assistant that reports "the API returned error 100" and
 one that returns your numbers.
-
----
-
-## How this compares to Meta's own MCP server
-
-Meta ships an official MCP server, hosted at `mcp.facebook.com/ads`. It is a good product.
-Here is an honest comparison, because the right choice depends on what you need.
-
-| | **This server** | Meta's official server | [getmcpads.com](https://www.getmcpads.com) |
-|---|---|---|---|
-| Hosting | **You host it.** stdio, local process | Meta-hosted, remote | Hosted for you |
-| Data path | **Direct to the Graph API.** No intermediary | Through Meta's endpoint | Through our gateway |
-| Auth | You bring a token, which is more setup (see below) | Meta Business OAuth, 2 clicks | Hosted OAuth |
-| Tools | **44** (34 read + 10 write) | 29 | [Current hosted catalogue](https://www.getmcpads.com/tools/meta-ads) |
-| Writes | **Preview first**, applied only on `confirm: true` | Applied directly | Preview first |
-| Metric compatibility | **Query planner splits incompatible requests** | None | Same planner |
-| Auditable | **Yes.** Apache-2.0, read every line | No | This server, audited |
-| Modifiable | **Fork it** | No | No |
-| Help Center search | **No** | Yes | No |
-| Catalog creation | ✅ | ❌ (catalog *reads* are supported) | ❌ |
-
-**Choose Meta's** if you want the fastest possible setup and don't need to see the code.
-**Choose this one** if you need your data to stay on your infrastructure, want to audit or
-extend what the model can do, or want writes that can't fire on the first call.
-**Choose [getmcpads.com](https://www.getmcpads.com)** if you want this server's capabilities
-without running it, or you need more than one ad platform in the same conversation.
 
 ---
 
@@ -405,3 +399,10 @@ The hosted GetMCPAds service additionally provides OAuth account selection and i
 ### Desktop bundle
 
 Run `npm run bundle -- /path/to/output` to build a `.mcpb` desktop bundle from the current catalogue. The bundle contains production dependencies, documented local configuration, and complete tool definitions. Provider credentials are entered locally during installation; write tools remain disabled unless explicitly enabled.
+
+## Additional native tools
+
+| Tool | Purpose |
+|---|---|
+| `meta_get_entity_configuration` | Read a specific entity in its ad account for reconciliation. |
+| `meta_get_uploaded_video` | Check video processing and membership in the selected account library. |

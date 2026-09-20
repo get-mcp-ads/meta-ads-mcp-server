@@ -1,4 +1,4 @@
-/** Copyright 2026 GetMCPAds. SPDX-License-Identifier: Apache-2.0 */
+/** Copyright 2026 getmcpads. SPDX-License-Identifier: Apache-2.0 */
 import {z} from 'zod';
 import type {ToolShape} from '../../tool-quality.js';
 import {toMinorUnits} from '../../core/money.js';
@@ -6,6 +6,7 @@ type Row=Record<string,any>;
 type Collector={tool:(name:string,description:string,shape:ToolShape,handler:(args:Row)=>Promise<unknown>)=>void};
 // Discover larger write schemas on demand; keep tools/list compact for every host.
 export const DEFERRED_META_WRITES = new Set([
+ 'meta_create_campaign',
  'meta_create_adset','meta_update_adset_configuration','meta_duplicate_adset',
  'meta_create_adcreative','meta_create_ad','meta_update_ad_creative',
  'meta_upload_ad_image','meta_upload_ad_video','meta_create_custom_audience',
@@ -72,12 +73,29 @@ const act=(v:string)=>v.replace(/^act_/,'');
 const obj=(v:unknown):Row=>v&&typeof v==='object'&&!Array.isArray(v)?v as Row:{};
 const has=(v:unknown)=>v!==undefined&&v!==null;
 function clean(v:Row):Row{return Object.fromEntries(Object.entries(v).filter(([,value])=>value!==undefined));}
+// Meta can silently replace collection media with the linked Instant Experience's
+// hero. Preserve the successful write ID, but stop dependent ads on any mismatch.
+function mediaDifferences(requested:unknown,returned:unknown,path=''):Row[]{
+ if(!requested||typeof requested!=='object')return [];
+ return Object.entries(requested).flatMap(([key,value])=>{
+  const field=path?`${path}.${key}`:key,actual=(returned as Row|undefined)?.[key];
+  if((['image_hash','video_id','photo_id'].includes(key)||(key==='hash'&&path.startsWith('asset_feed_spec.images.')))&&value!==actual)return [{field,requested:value,returned:actual??null}];
+  return mediaDifferences(value,actual,field);
+ });
+}
 function safeJson(value:unknown,depth=0):void {
  if(depth>15)throw new Error('Specification is too deeply nested.');
  if(value&&typeof value==='object')for(const [k,v] of Object.entries(value)){
   if(['access_token','appsecret_proof','__proto__','constructor','prototype'].includes(k))throw new Error(`Forbidden specification key: ${k}`);
   safeJson(v,depth+1);
  }
+}
+function validateAdsetState(p:Row):void {
+ if(p.start_time&&p.end_time&&Date.parse(p.end_time)<=Date.parse(p.start_time))throw new Error('end_time must be after start_time.');
+ if(Number(p.lifetime_budget)>0&&!p.end_time)throw new Error('A lifetime budget requires end_time.');
+ if(p.bid_strategy==='LOWEST_COST_WITHOUT_CAP'&&Number(p.bid_amount)>0)throw new Error('Automatic lowest-cost bidding cannot include a bid cap.');
+ if(['COST_CAP','LOWEST_COST_WITH_BID_CAP'].includes(p.bid_strategy)&&!(Number(p.bid_amount)>0))throw new Error('This bidding strategy requires bidAmount.');
+ if(p.bid_strategy==='LOWEST_COST_WITH_MIN_ROAS'&&!(Number(obj(p.bid_constraints).roas_average_floor)>0))throw new Error('Minimum ROAS bidding requires bid_constraints.roas_average_floor.');
 }
 export function buildAdsetPayload(a:Row,creating:boolean):Row {
  const config=adsetConfig.parse(a.configuration??{});safeJson(config);
@@ -93,12 +111,24 @@ export function buildAdsetPayload(a:Row,creating:boolean):Row {
  if(p.start_time&&p.end_time&&Date.parse(p.end_time)<=Date.parse(p.start_time))throw new Error('end_time must be after start_time.');
  if(creating&&p.lifetime_budget&&!p.end_time)throw new Error('A lifetime budget requires end_time.');
  const targeting=obj(p.targeting);
+ if(obj(p.promoted_object).custom_conversion_id&&obj(p.promoted_object).pixel_id)throw new Error('For a custom conversion use custom_conversion_id without pixel_id. Meta resolves the pixel through the conversion.');
+ if(p.targeting){
+  for(const key of ['age_min','age_max'])if(has(targeting[key])&&(!Number.isInteger(targeting[key])||Number(targeting[key])<13||Number(targeting[key])>65))throw new Error(`${key} must be an integer from 13 to 65 (65 means 65+).`);
+  if(targeting.locales&&(!Array.isArray(targeting.locales)||targeting.locales.some((v:unknown)=>!Number.isInteger(v)||Number(v)<=0)))throw new Error('Use native numeric locale IDs.');
+  const geo=obj(targeting.geo_locations);
+  if(geo.countries&&(!Array.isArray(geo.countries)||!geo.countries.length||geo.countries.some((v:unknown)=>typeof v!=='string'||!/^([A-Z]{2})$/.test(v))))throw new Error('countries must contain explicit two-letter uppercase country codes.');
+  if(!Object.entries(geo).some(([key,v])=>key!=='location_types'&&Array.isArray(v)&&v.length))throw new Error('Specify nonempty geo_locations explicitly.');
+  if(obj(targeting.exclusions).custom_audiences)throw new Error('Use targeting.excluded_custom_audiences for audience exclusions; exclusions.custom_audiences is not supported by Meta.');
+  const excluded=new Set((targeting.excluded_custom_audiences??[]).map((v:Row)=>v.id));
+  if((targeting.custom_audiences??[]).some((v:Row)=>excluded.has(v.id)))throw new Error('The same custom audience cannot be included and excluded.');
+ }
  if(targeting.age_min&&targeting.age_max&&Number(targeting.age_min)>Number(targeting.age_max))throw new Error('Targeting age_min exceeds age_max.');
  if(targeting.exclusions&&(obj(targeting.exclusions).interests||obj(targeting.exclusions).behaviors||obj(targeting.exclusions).demographics))throw new Error('Meta no longer supports detailed-targeting exclusions. Use supported audience or geographic exclusions.');
  if(creating&&!Object.keys(obj(targeting.geo_locations)).length)throw new Error('Specify geo_locations explicitly; no country is assumed.');
  if(p.bid_strategy==='LOWEST_COST_WITHOUT_CAP'&&p.bid_amount)throw new Error('Automatic lowest-cost bidding cannot include a bid cap.');
  if(creating&&['COST_CAP','LOWEST_COST_WITH_BID_CAP'].includes(p.bid_strategy)&&!p.bid_amount)throw new Error('This bidding strategy requires bidAmount.');
  if(creating&&p.bid_strategy==='LOWEST_COST_WITH_MIN_ROAS'&&!obj(p.bid_constraints).roas_average_floor)throw new Error('Minimum ROAS bidding requires bid_constraints.roas_average_floor.');
+ if(creating)validateAdsetState(p);
  if(!creating&&!Object.keys(p).length)throw new Error('No ad set change was supplied.');
  return p;
 }
@@ -112,7 +142,7 @@ export function registerMetaExtendedWrites(c:Collector,config:Record<string,stri
   let upload:FormData|undefined;
   if(file){upload=new FormData();for(const [k,v] of query)upload.set(k,v);upload.set('source',new Blob([Uint8Array.from(atob(file.base64),ch=>ch.charCodeAt(0))],{type:'video/mp4'}),file.name);}
   let response:Response;
-  try{response=await fetch(`${base}/${path}${method==='GET'?'?'+query:''}`,{method,headers:method==='GET'||file?headers:{...headers,'content-type':'application/x-www-form-urlencoded'},...(method==='POST'?{body:upload??query}:{}),signal:AbortSignal.timeout(45000), redirect: "error"});}
+  try{response=await fetch(`${base}/${path}${method==='GET'?'?'+query:''}`,{method,headers:method==='GET'||file?headers:{...headers,'content-type':'application/x-www-form-urlencoded'},...(method==='POST'?{body:upload??query}:{}),signal:AbortSignal.timeout(45000),redirect:"error"});}
   catch{throw Object.assign(new Error(method==='POST'?'Meta did not confirm the mutation. Check the account before retrying; a duplicate may otherwise be created.':'Meta could not be reached.'),{outcome:method==='POST'?'unknown':'not_applied'});}
   let dataOut:Row;try{dataOut=await response.json() as Row;}catch{throw Object.assign(new Error('Meta returned an unreadable response. Check the object before retrying.'),{outcome:method==='POST'?'unknown':'not_applied'});}
   if(!response.ok||dataOut.error){const e=obj(dataOut.error);throw Object.assign(new Error(String(e.error_user_msg||e.message||`Meta HTTP ${response.status}`).replaceAll(config.accessToken,'[redacted]').slice(0,700)),{code:e.code,subcode:e.error_subcode,outcome:'not_applied'});}
@@ -130,6 +160,23 @@ export function registerMetaExtendedWrites(c:Collector,config:Record<string,stri
  }
  if(readOnly){
   const read=(n:string,d:string,shape:ToolShape,fn:(a:Row)=>Promise<unknown>)=>{const schema=z.object({adAccountId:accountId,...shape}).strict();c.tool(n,d,schema.shape,async raw=>{try{return out(await fn(schema.parse(raw)));}catch(e){return out({error:(e as Error).message},true);}});};
+  read('meta_get_entity_configuration','Read a specific entity in its ad account for reconciliation. Read-only; never creates, changes or retries the entity. Missing or normalized fields must be inspected before claiming an exact match.',{
+   entityId:id.describe('Exact entity ID saved in the acknowledged creation receipt.'),
+   fields:z.array(z.enum(['name','status','objective','daily_budget','lifetime_budget','special_ad_categories','special_ad_category_country','bid_strategy','campaign_id','optimization_goal','billing_event','targeting','promoted_object','bid_amount','bid_constraints','start_time','end_time','attribution_spec','destination_type','is_dynamic_creative','dsa_beneficiary','dsa_payor','adset_id','creative','tracking_specs','conversion_domain','object_story_spec','asset_feed_spec','object_story_id','instagram_actor_id','instagram_user_id','url_tags','degrees_of_freedom_spec','is_adset_budget_sharing_enabled'])).min(1).max(40).describe('Exact fields to re-read from the reviewed native creation payload. IDs and account ownership are always checked.'),
+  },async a=>({entity:await owned(a.entityId,a.adAccountId,['id','account_id',...a.fields].join(','))}));
+  read('meta_get_uploaded_video','Check video processing and membership in the selected account library. If the first page misses the ID, use the video title to narrow the account-scoped lookup. A direct video read alone never proves membership or readiness. Bounded pagination; not_found is not success.',{videoId:id.describe('Exact uploaded video ID returned by Meta in this account.')},async a=>{
+   let after:string|undefined,title:string|undefined;
+   for(let page=0;page<6;page++){
+    const result=await graph(`act_${act(a.adAccountId)}/advideos`,'GET',clean({fields:'id,status,picture',limit:100,after,title}));
+    const video=Array.isArray(result.data)?result.data.find((v:Row)=>String(v.id)===a.videoId):undefined;
+    if(video)return {videoId:a.videoId,state:video.status?.video_status??'unknown',ready:video.status?.video_status==='ready',thumbnailUrl:typeof video.picture==='string'?video.picture:undefined};
+    if(page===0){
+     try{const node=await graph(a.videoId,'GET',{fields:'id,title'});if(String(node.id)===a.videoId&&typeof node.title==='string'&&node.title.trim()){title=node.title;after=undefined;continue;}}catch{/* Keep the account-scoped lookup; metadata failure is not readiness. */}
+    }
+    const next=result.paging?.cursors?.after;if(!result.paging?.next||!next||next===after)break;after=next;
+   }
+   return {videoId:a.videoId,state:'not_found_in_recent_library',ready:false};
+  });
   read('meta_get_adset_configuration','Read an existing ad set, its parent campaign budget/objective and account currency before preparing an edit. Returns native settings; no mutation.',{adSetId:id},async a=>{
    const adset=await owned(a.adSetId,a.adAccountId,'id,name,account_id,campaign_id,status,targeting,promoted_object,optimization_goal,billing_event,bid_strategy,bid_amount,bid_constraints,daily_budget,lifetime_budget,start_time,end_time,attribution_spec,destination_type,is_dynamic_creative,dsa_beneficiary,dsa_payor');
    const [info,campaign]=await Promise.all([account(a.adAccountId),owned(adset.campaign_id,a.adAccountId,'id,name,account_id,objective,status,daily_budget,lifetime_budget,special_ad_categories')]);
@@ -154,7 +201,16 @@ export function registerMetaExtendedWrites(c:Collector,config:Record<string,stri
     if(a.validateOnly)return out({applied:false,validatedByMeta:true,action:n,result});
     let verification:unknown;
     if(p.readback){try{verification=await graph(result[p.idKey||'id']||p.path,'GET',{fields:p.readback});}catch{verification={confirmed:false,message:'Mutation returned success, but readback failed. Read the returned ID; do not recreate it.'};}}
+    if(['meta_create_campaign','meta_create_adset','meta_create_ad'].includes(n)&&obj(verification).confirmed!==false){
+     verification={...obj(verification),confirmed:obj(verification).status==='PAUSED'&&String(obj(verification).account_id)===act(a.adAccountId)};
+    }
     const differences:Row[]=[];
+    if(n==='meta_create_adcreative'&&obj(verification).confirmed!==false){
+     const media=mediaDifferences(a.spec.object_story_spec,obj(verification).object_story_spec,'object_story_spec');
+     media.push(...mediaDifferences(a.spec.asset_feed_spec,obj(verification).asset_feed_spec,'asset_feed_spec'));
+     differences.push(...media);
+     verification={...obj(verification),confirmed:media.length===0&&String(obj(verification).account_id)===act(a.adAccountId),...(media.length?{message:'Meta returned different or missing media. For collections, check the linked Instant Experience cover. Inspect this existing creative before continuing; do not automatically recreate it.'}:{})};
+    }
     if(n==='meta_create_adcreative'&&typeof obj(verification).name==='string'&&obj(verification).name!==a.name){
      differences.push({field:'name',requested:a.name,returned:obj(verification).name,
       note:'The submitted name and Meta readback differ. The cause is not established by this response; do not recreate the creative to force a match.'});
@@ -164,6 +220,37 @@ export function registerMetaExtendedWrites(c:Collector,config:Record<string,stri
   });
  }
  const checkCurrency=async(a:Row)=>{const info=await account(a.adAccountId);if(a.currency&&info.currency!==a.currency)throw new Error(`Account currency is ${info.currency}, not ${a.currency}. Nothing was changed.`);};
+ const budgets={currency:money.currency,dailyBudget:money.dailyBudget.describe('Daily budget in major account-currency units. Mutually exclusive with lifetimeBudget.'),lifetimeBudget:money.lifetimeBudget.describe('Total lifetime budget in major account-currency units. Requires bounded ad set schedules; mutually exclusive with dailyBudget.')};
+ const budgetPayload=(a:Row,required=false):Row=>{
+  if(has(a.dailyBudget)&&has(a.lifetimeBudget))throw new Error('Choose dailyBudget OR lifetimeBudget, not both.');
+  if(required&&!has(a.dailyBudget)&&!has(a.lifetimeBudget))throw new Error('Provide dailyBudget or lifetimeBudget.');
+  if((has(a.dailyBudget)||has(a.lifetimeBudget))&&!a.currency)throw new Error('Supply the account currency for monetary amounts.');
+  const p:Row={};for(const [from,to]of [['dailyBudget','daily_budget'],['lifetimeBudget','lifetime_budget']])if(has(a[from])){p[to]=toMinorUnits(Number(a[from]),String(a.currency));if(p[to]<1)throw new Error('Budget rounds to zero in the account currency.');}return p;
+ };
+ register('meta_create_campaign','Create a PAUSED Meta campaign with either ad set budgets (omit campaign budget), a daily campaign budget, or a lifetime campaign budget. Supports native validate_only.',{
+  name,objective:z.enum(['OUTCOME_TRAFFIC','OUTCOME_SALES','OUTCOME_LEADS','OUTCOME_AWARENESS','OUTCOME_ENGAGEMENT','OUTCOME_APP_PROMOTION']),
+  specialAdCategories:z.array(z.enum(['NONE','HOUSING','EMPLOYMENT','CREDIT','ISSUES_ELECTIONS_POLITICS'])).optional().describe('Required special categories; omit for none.'),
+  adsetBudgetSharing:z.boolean().default(false).describe('Explicit ad set budget sharing choice; only with ad set budgets.'),
+  ...budgets,bidStrategy:adsetConfig.shape.bid_strategy,startTime:date.optional(),endTime:date.optional(),
+ },a=>{
+  const budget=budgetPayload(a);
+  if(Object.keys(budget).length&&a.adsetBudgetSharing)throw new Error('Ad set budget sharing cannot be combined with a campaign budget.');
+  if(a.startTime&&a.endTime&&Date.parse(a.endTime)<=Date.parse(a.startTime))throw new Error('endTime must follow startTime.');
+  return {path:`act_${act(a.adAccountId)}/campaigns`,payload:clean({name:a.name,objective:a.objective,special_ad_categories:a.specialAdCategories??[],is_adset_budget_sharing_enabled:a.adsetBudgetSharing,status:'PAUSED',...budget,bid_strategy:a.bidStrategy,start_time:a.startTime,stop_time:a.endTime}),validate:true,scope:()=>checkCurrency(a),readback:'id,name,account_id,status,daily_budget,lifetime_budget'};
+ });
+ const adsetUpdate=(a:Row,payload:Row):Plan=>({path:a.adSetId,payload,validate:true,readback:'id,account_id,status,targeting,optimization_goal,billing_event,start_time,end_time,daily_budget,lifetime_budget,bid_strategy,bid_amount',scope:async()=>{
+  await checkCurrency(a);const current=await owned(a.adSetId,a.adAccountId,'id,account_id,campaign_id,start_time,end_time,targeting,optimization_goal,billing_event,bid_strategy,bid_amount,bid_constraints,daily_budget,lifetime_budget');
+  validateAdsetState({...current,...payload});
+  if(payload.daily_budget||payload.lifetime_budget){const parent=await owned(current.campaign_id,a.adAccountId,'id,account_id,daily_budget,lifetime_budget');if(Number(parent.daily_budget)>0||Number(parent.lifetime_budget)>0)throw new Error('This campaign owns its budget; change it at campaign level.');}
+ }});
+ register('meta_update_adset_budget','Change an ad set daily or lifetime budget after checking its parent budget and existing schedule. Status stays unchanged.',{adSetId:id,...budgets},a=>adsetUpdate(a,budgetPayload(a,true)));
+ register('meta_update_adset_schedule','Change start and/or end time using ISO 8601 with an explicit offset. Check the resulting range against existing dates before any mutation.',{adSetId:id,startTime:date.optional(),endTime:date.optional()},a=>{
+  if(!a.startTime&&!a.endTime)throw new Error('Provide startTime or endTime.');
+  const p=clean({start_time:a.startTime,end_time:a.endTime});if(a.startTime&&a.endTime&&Date.parse(a.endTime)<=Date.parse(a.startTime))throw new Error('endTime must follow startTime.');return adsetUpdate(a,p);
+ });
+ register('meta_update_campaign_budget','Change an existing campaign-owned budget after verifying currency and ownership. Does not convert an ad-set-budget campaign or change status.',{campaignId:id,...budgets},a=>({path:a.campaignId,payload:budgetPayload(a,true),validate:true,readback:'id,account_id,status,daily_budget,lifetime_budget',scope:async()=>{
+  await checkCurrency(a);const parent=await owned(a.campaignId,a.adAccountId,'id,account_id,daily_budget,lifetime_budget');if(!(Number(parent.daily_budget)>0||Number(parent.lifetime_budget)>0))throw new Error('This campaign has no campaign budget; update its ad set budget.');
+ }}));
  register('meta_create_adset','Create a PAUSED Meta ad set with explicit targeting, optimization, placements, attribution, bidding and schedule. Amounts use major account-currency units.',{campaignId:id,name,configuration:adsetConfig,...money},a=>{
   const payload=buildAdsetPayload(a,true);
   return {path:`act_${act(a.adAccountId)}/adsets`,payload,validate:true,readback:'id,name,status,effective_status,account_id,campaign_id,targeting,daily_budget,lifetime_budget',scope:async()=>{
@@ -175,13 +262,7 @@ export function registerMetaExtendedWrites(c:Collector,config:Record<string,stri
  });
  register('meta_update_adset_configuration','Update targeting, optimization, placements, attribution, bidding, budget or schedule. Targeting is a COMPLETE replacement, not a partial merge. Status is unchanged.',{adSetId:id,configuration:adsetConfig,...money},a=>{
   const payload=buildAdsetPayload(a,false);
-  return {path:a.adSetId,payload,validate:true,readback:'id,account_id,status,targeting,optimization_goal,billing_event',scope:async()=>{
-   await checkCurrency(a);const current=await owned(a.adSetId,a.adAccountId,'id,account_id,campaign_id,start_time,end_time,targeting,optimization_goal,billing_event,bid_strategy,bid_amount,lifetime_budget');
-   const merged={...current,...payload};
-   if(merged.start_time&&merged.end_time&&Date.parse(merged.end_time)<=Date.parse(merged.start_time))throw new Error('The resulting end_time must be after start_time.');
-   if(Number(merged.lifetime_budget)>0&&!merged.end_time)throw new Error('Lifetime budget requires an end time.');
-   if(payload.daily_budget||payload.lifetime_budget){const parent=await owned(current.campaign_id,a.adAccountId,'id,account_id,daily_budget,lifetime_budget');if(Number(parent.daily_budget)>0||Number(parent.lifetime_budget)>0)throw new Error('This campaign owns its budget; change it at campaign level.');}
-  }};
+  return adsetUpdate(a,payload);
  });
  register('meta_duplicate_adset','Duplicate a known-good ad set within the selected account, preserving complex native configuration. Always PAUSED and WITHOUT copying ads. Rename it afterwards with meta_rename_adset.',{adSetId:id,campaignId:id.optional(),startTime:date.optional(),endTime:date.optional()},a=>{
   if(a.startTime&&a.endTime&&Date.parse(a.endTime)<=Date.parse(a.startTime))throw new Error('endTime must be after startTime.');
@@ -191,7 +272,7 @@ export function registerMetaExtendedWrites(c:Collector,config:Record<string,stri
   const spec=creativeSpec.parse(a.spec);
   if(Number(!!spec.object_story_id)+Number(!!spec.object_story_spec)!==1)throw new Error('Supply exactly one of object_story_id or object_story_spec.');
   if(spec.object_story_spec&&!id.safeParse(spec.object_story_spec.page_id).success)throw new Error('object_story_spec requires an explicit numeric page_id.');
-  return {path:`act_${act(a.adAccountId)}/adcreatives`,payload:{name:a.name,...spec},validate:true,scope:()=>account(a.adAccountId),readback:'id,name,account_id,object_story_id,effective_object_story_id'};
+  return {path:`act_${act(a.adAccountId)}/adcreatives`,payload:{name:a.name,...spec},validate:true,scope:()=>account(a.adAccountId),readback:'id,name,account_id,object_story_id,effective_object_story_id,object_story_spec,asset_feed_spec,product_set_id'};
  });
  register('meta_create_ad','Create a PAUSED ad using an existing ad set and creative from the selected account.',{adSetId:id,creativeId:id,name,trackingSpecs:z.array(json).optional()},a=>({path:`act_${act(a.adAccountId)}/ads`,payload:clean({name:a.name,adset_id:a.adSetId,creative:{creative_id:a.creativeId},status:'PAUSED',tracking_specs:a.trackingSpecs}),validate:true,scope:async()=>{await owned(a.adSetId,a.adAccountId);await owned(a.creativeId,a.adAccountId);},readback:'id,name,account_id,status,effective_status,adset_id,creative{id}'}));
  register('meta_update_ad_creative','Replace an ad’s creative with another existing creative from the same account. The ad status is unchanged.',{adId:id,creativeId:id},a=>({path:a.adId,payload:{creative:{creative_id:a.creativeId}},validate:true,scope:async()=>{await owned(a.adId,a.adAccountId);await owned(a.creativeId,a.adAccountId);},readback:'id,account_id,status,creative{id}'}));
@@ -227,7 +308,7 @@ export function registerMetaExtendedWrites(c:Collector,config:Record<string,stri
 export async function verifyMetaWriteScope(config:Record<string,string>,a:Row):Promise<void>{
  accountId.parse(a.adAccountId);
  const get=async(node:string,fields:string)=>{
-  const response=await fetch(`https://graph.facebook.com/${config.apiVersion||'v26.0'}/${node}?fields=${encodeURIComponent(fields)}`,{headers:{authorization:`Bearer ${config.accessToken}`},signal:AbortSignal.timeout(30000), redirect: "error"});
+  const response=await fetch(`https://graph.facebook.com/${config.apiVersion||'v26.0'}/${node}?fields=${encodeURIComponent(fields)}`,{headers:{authorization:`Bearer ${config.accessToken}`},signal:AbortSignal.timeout(30000),redirect:"error"});
   const data=await response.json() as Row;if(!response.ok||data.error)throw new Error('Cannot verify the Meta target scope. Nothing was changed.');return data;
  };
  const info=await get(`act_${act(a.adAccountId)}`,'id,currency');

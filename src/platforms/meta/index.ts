@@ -15,7 +15,7 @@ export function registerMeta(server: McpServer, config: MetaConfig): void {
   registerMetaTools(server, config);
   registerMetaExtendedWrites(server as never, config as never, true);
   registerMetaResources(server, config.enableWrites ?? false);
-  logger.info("meta", "Registered 39 read tools and 7 resources");
+  logger.info("meta", "Registered 41 read tools and 7 resources");
 
   if (config.enableWrites) {
     registerMetaWrites(server as never, config as never);

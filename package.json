@@ -1,8 +1,8 @@
 {
   "name": "@getmcpads/meta-ads-mcp-server",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "mcpName": "com.getmcpads/meta-ads",
-  "description": "Meta Ads MCP server: 39 read tools, 23 opt-in preview-first writes.",
+  "description": "Meta Ads MCP server: 41 read tools, 23 opt-in preview-first writes.",
   "license": "Apache-2.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -42,10 +42,10 @@
     "tsx": "^4.0.0",
     "typescript": "^5.7.0",
     "typescript-eslint": "^8.0.0",
-    "vitest": "^3.2.7"
+    "vitest": "^4.1.11"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22.12.0"
   },
   "files": [
     "dist/",
@@ -80,7 +80,7 @@
   "bugs": {
     "url": "https://github.com/getmcpads-com/meta-ads-mcp-server/issues"
   },
-  "author": "GetMCPAds (https://www.getmcpads.com)",
+  "author": "Emmanuel, getmcpads (https://www.getmcpads.com)",
   "publishConfig": {
     "access": "public"
   }

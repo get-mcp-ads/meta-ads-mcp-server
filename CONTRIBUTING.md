@@ -18,7 +18,7 @@ Then run the checks:
 npm run typecheck && npm run lint && npm test && npm run build
 ```
 
-All four must pass. CI runs them on Node 18, 20 and 22.
+All four must pass. CI runs them on Node 22 and 24.
 
 ## Ground rules
 

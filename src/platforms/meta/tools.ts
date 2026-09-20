@@ -2576,7 +2576,7 @@ export function registerMetaTools(server: McpServer, config: MetaConfig): void {
       limit: limitSchema,
       cursor: cursorSchema,
     },
-    async ({ adAccountId, statusFilter, limit, cursor }) => {
+    async ({ adAccountId, statusFilter, limit = 100, cursor }) => {
       try {
         const fields = "id,name,status,effective_status,objective,daily_budget,lifetime_budget,budget_remaining,bid_strategy,buying_type,start_time,stop_time";
         let url = `https://graph.facebook.com/${client.apiVersion}/${adAccountId}/campaigns?fields=${fields}&limit=${limit}`;
@@ -2601,7 +2601,7 @@ export function registerMetaTools(server: McpServer, config: MetaConfig): void {
       limit: limitSchema,
       cursor: cursorSchema,
     },
-    async ({ adAccountId, campaignId, statusFilter, limit, cursor }) => {
+    async ({ adAccountId, campaignId, statusFilter, limit = 100, cursor }) => {
       try {
         const fields = "id,name,status,effective_status,campaign_id,daily_budget,lifetime_budget,optimization_goal,billing_event,bid_amount,targeting,start_time,end_time";
         const parent = campaignId ?? adAccountId;
@@ -2628,7 +2628,7 @@ export function registerMetaTools(server: McpServer, config: MetaConfig): void {
       limit: limitSchema,
       cursor: cursorSchema,
     },
-    async ({ adAccountId, adsetId, adSetId, statusFilter, limit, cursor }) => {
+    async ({ adAccountId, adsetId, adSetId, statusFilter, limit = 100, cursor }) => {
       try {
         if (adsetId && adSetId && adsetId !== adSetId) throw new Error("adsetId and adSetId must match when both are supplied.");
         const fields = "id,name,status,effective_status,adset_id,campaign_id,creative{id,name,thumbnail_url,object_story_spec,asset_feed_spec}";
@@ -2795,14 +2795,50 @@ The query planner automatically splits incompatible metric/breakdown combination
     async ({ adAccountId, adIds, limit }) => {
       try {
         const fields = "id,name,status,creative{id,name,body,title,image_url,image_hash,video_id,thumbnail_url,link_url,object_story_spec,asset_feed_spec,call_to_action_type}";
-        let url: string;
         if (adIds && adIds.length > 0) {
-          const ids = adIds.join(",");
-          url = `https://graph.facebook.com/${client.apiVersion}/?ids=${ids}&fields=${fields}`;
-        } else {
-          url = `https://graph.facebook.com/${client.apiVersion}/${adAccountId}/ads?fields=${fields}&limit=${limit}`;
+          const ids = [...new Set(adIds)];
+          if (ids.length > 500 || ids.some(id => !/^\d+$/.test(id))) {
+            throw new Error("Provide at most 500 numeric ad IDs.");
+          }
+          const account = formatAdAccountId(adAccountId);
+          const merged: Record<string, unknown> = {};
+          const warnings: MetaWarning[] = [];
+          let requestCount = 0;
+          // Graph v26 removed the root ?ids= multi-node lookup. Query the
+          // authorized account instead, retaining the legacy ID-keyed result.
+          for (let index = 0; index < ids.length; index += 50) {
+            const chunk = ids.slice(index, index + 50);
+            const result = await client.fetchUrl(graphUrl(client, `/${account}/ads`, {
+              fields: `account_id,${fields}`,
+              filtering: JSON.stringify([{field: "id", operator: "IN", value: chunk}]),
+              limit: 500,
+            }));
+            requestCount++;
+            for (const ad of dataArray(result)) {
+              if (typeof ad.id === "string" && chunk.includes(ad.id)
+                && typeof ad.account_id === "string" && formatAdAccountId(ad.account_id) === account) {
+                merged[ad.id] = ad;
+              }
+            }
+          }
+          // Historical ads may be missing from the account inventory. Bound
+          // exact-node reads and verify ownership before returning their data.
+          const missing = ids.filter(id => !merged[id]);
+          for (const id of missing.slice(0, 10)) {
+            requestCount++;
+            const ad = await fetchGraph(client, "historical_ad_creative",
+              graphUrl(client, `/${id}`, {fields: `account_id,${fields}`}), warnings,
+              "Verify that this historical ad is still accessible in the selected account.");
+            if (ad?.id === id && typeof ad.account_id === "string"
+              && formatAdAccountId(ad.account_id) === account) merged[id] = ad;
+          }
+          const unresolved = ids.filter(id => !merged[id]);
+          if (unresolved.length) warnings.push({area: "creative_lookup",
+            message: `${unresolved.length} requested ads could not be verified in the selected account.`,
+            suggestion: "Narrow the selection; historical fallback is limited to 10 ads. Missing ads are not empty creatives."});
+          return ok({...merged, warnings, debug: {requestCount}});
         }
-        const result = await client.fetchUrl(url);
+        const result = await client.fetchUrl(graphUrl(client, `/${formatAdAccountId(adAccountId)}/ads`, {fields, limit}));
         return ok(result);
       } catch (e) {
         return formatMcpToolError(e);

@@ -101,98 +101,9 @@ export function registerMetaWrites(c: Collector, config: Record<string, string>)
   statusTool("meta_update_adset_status", "ad set", "adSetId");
   statusTool("meta_update_ad_status", "ad", "adId");
 
-  c.tool(
-    "meta_create_campaign",
-    "Create a Meta campaign. It is always created PAUSED and there is no option to create " +
-      "it active. Previews by default.",
-    {
-      adAccountId: z.string().describe("Ad account, act_… or bare ID."),
-      name: z.string().describe("Name to set. This is the only thing the call changes."),
-      objective: z
-        .enum([
-          "OUTCOME_TRAFFIC",
-          "OUTCOME_SALES",
-          "OUTCOME_LEADS",
-          "OUTCOME_AWARENESS",
-          "OUTCOME_ENGAGEMENT",
-          "OUTCOME_APP_PROMOTION",
-        ])
-        .describe("Campaign objective."),
-      specialAdCategories: z
-        .array(z.enum(["NONE", "HOUSING", "EMPLOYMENT", "CREDIT", "ISSUES_ELECTIONS_POLITICS"]))
-        .optional()
-        .describe("Required by Meta. Defaults to none."),
-      adsetBudgetSharing: z.boolean().default(false).describe("Explicit ad set budget sharing choice required by Meta. Defaults to false."),
-      confirm: confirmSchema,
-    },
-    async (a) => {
-      const { adAccountId, name, objective, specialAdCategories, adsetBudgetSharing, confirm } = a as Record<
-        string,
-        unknown
-      >;
-      const act = String(adAccountId).startsWith("act_") ? String(adAccountId) : `act_${adAccountId}`;
-      const categories = Array.isArray(specialAdCategories) ? specialAdCategories : [];
-      if (!confirm) {
-        return preview("meta_create_campaign", { adAccount: act, name, objective, specialAdCategories: categories, adsetBudgetSharing, status: "PAUSED" });
-      }
-      const result = await request(
-        graph(`${act}/campaigns`),
-        {
-          method: "POST",
-          headers: { "content-type": "application/x-www-form-urlencoded" },
-          body: new URLSearchParams({
-            name: String(name),
-            objective: String(objective),
-            status: "PAUSED",
-            special_ad_categories: JSON.stringify(categories),
-            is_adset_budget_sharing_enabled: String(adsetBudgetSharing),
-            access_token: config.accessToken,
-          }),
-        },
-        "Meta campaign creation",
-      );
-      return ok({ applied: true, action: "meta_create_campaign", status: "PAUSED", result });
-    },
-  );
 
-  c.tool(
-    "meta_update_adset_budget",
-    "Change the daily or lifetime budget of a Meta ad set. Amount in the account currency " +
-      "(12.50 for 12.50 EUR). Meta expects minor units, the conversion is done here. " +
-      "Previews by default.",
-    {
-      adSetId: z.string().describe("Ad set ID."),
-      adAccountId: z.string().describe("Owning ad account, with or without the act_ prefix."),
-      currency: z.string().regex(/^[A-Z]{3}$/).describe("Actual account currency. Required to avoid incorrect unit conversion."),
-      dailyBudget: z.number().positive().optional().describe("Daily budget."),
-      lifetimeBudget: z.number().positive().optional().describe("Lifetime budget, mutually exclusive with the daily budget."),
-      confirm: confirmSchema,
-    },
-    async (a) => {
-      const { adSetId, currency, dailyBudget, lifetimeBudget, confirm } = a as Record<string, string | number | boolean>;
-      if (dailyBudget === undefined && lifetimeBudget === undefined) {
-        return ko("Provide either dailyBudget or lifetimeBudget.");
-      }
-      if (dailyBudget !== undefined && lifetimeBudget !== undefined) {
-        return ko("dailyBudget and lifetimeBudget are mutually exclusive; Meta rejects both together.");
-      }
-      const field = dailyBudget !== undefined ? "daily_budget" : "lifetime_budget";
-      const minorUnits = toMinorUnits(Number(dailyBudget ?? lifetimeBudget), String(currency));
-      if (!confirm) {
-        return preview("meta_update_adset_budget", { adSet: adSetId, field, amount: dailyBudget ?? lifetimeBudget, inMinorUnits: minorUnits });
-      }
-      const result = await request(
-        graph(String(adSetId)),
-        {
-          method: "POST",
-          headers: { "content-type": "application/x-www-form-urlencoded" },
-          body: new URLSearchParams({ [field]: String(minorUnits), access_token: config.accessToken }),
-        },
-        "Meta budget",
-      );
-      return ok({ applied: true, action: "meta_update_adset_budget", result: result });
-    },
-  );
+
+
 
   const renameTool = (nom: string, target: "campaign" | "ad set" | "ad", param: string) =>
     c.tool(
@@ -225,72 +136,9 @@ export function registerMetaWrites(c: Collector, config: Record<string, string>)
   renameTool("meta_rename_adset", "ad set", "adSetId");
   renameTool("meta_rename_ad", "ad", "adId");
 
-  c.tool(
-    "meta_update_campaign_budget",
-    "Change the budget of a Meta campaign that holds its budget at campaign level (Advantage " +
-      "campaign budget). On a campaign without one, Meta refuses and the ad set budget is the " +
-      "one to change. Amount in the account currency. Previews by default.",
-    {
-      campaignId: z.string().describe("Campaign ID."),
-      adAccountId: z.string().describe("Owning ad account (act_… or bare ID)."),
-      currency: z.string().length(3).describe("Account currency code, for example EUR. Read it with meta_get_ad_accounts."),
-      dailyBudget: z.number().positive().optional().describe("New daily budget, in the account currency."),
-      lifetimeBudget: z.number().positive().optional().describe("New lifetime budget, in the account currency."),
-      confirm: confirmSchema,
-    },
-    async (a) => {
-      const { campaignId, currency, dailyBudget, lifetimeBudget, confirm } = a as Record<string, string | number | boolean>;
-      if (dailyBudget === undefined && lifetimeBudget === undefined) {
-        return ko("Provide either dailyBudget or lifetimeBudget.");
-      }
-      if (dailyBudget !== undefined && lifetimeBudget !== undefined) {
-        return ko("Provide only one of dailyBudget or lifetimeBudget; Meta holds one or the other.");
-      }
-      const field = dailyBudget !== undefined ? "daily_budget" : "lifetime_budget";
-      const amount = Number(dailyBudget ?? lifetimeBudget);
-      const minor = toMinorUnits(amount, String(currency));
-      if (!confirm) {
-        return preview("meta_update_campaign_budget", { campaign: campaignId, field, amount, currency, inMinorUnits: minor });
-      }
-      const result = await request(
-        graph(String(campaignId)),
-        {
-          method: "POST",
-          headers: { "content-type": "application/x-www-form-urlencoded" },
-          body: new URLSearchParams({ [field]: String(minor), access_token: config.accessToken }),
-        },
-        "Meta campaign budget",
-      );
-      return ok({ applied: true, action: "meta_update_campaign_budget", result });
-    },
-  );
 
-  c.tool(
-    "meta_update_adset_schedule",
-    "Change the start or end time of a Meta ad set. Times are ISO 8601 with an offset, for " +
-      "example 2026-09-01T00:00:00+0200. Previews by default.",
-    {
-      adSetId: z.string().describe("Ad set ID."),
-      adAccountId: z.string().describe("Owning ad account (act_… or bare ID)."),
-      startTime: z.string().optional().describe("Start time, ISO 8601 with an offset, for example 2026-09-01T00:00:00+0200."),
-      endTime: z.string().optional().describe("End time, ISO 8601 with an offset, for example 2026-09-30T23:59:59+0200."),
-      confirm: confirmSchema,
-    },
-    async (a) => {
-      const { adSetId, startTime, endTime, confirm } = a as Record<string, string | boolean>;
-      if (!startTime && !endTime) return ko("Provide startTime, endTime, or both.");
-      const body: Record<string, string> = { access_token: config.accessToken };
-      if (startTime) body.start_time = String(startTime);
-      if (endTime) body.end_time = String(endTime);
-      if (!confirm) return preview("meta_update_adset_schedule", { adSet: adSetId, startTime, endTime });
-      const result = await request(
-        graph(String(adSetId)),
-        { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(body) },
-        "Meta ad set schedule",
-      );
-      return ok({ applied: true, action: "meta_update_adset_schedule", result });
-    },
-  );
+
+
 }
 
 // ────────────────────────────── TikTok ──────────────────────────────

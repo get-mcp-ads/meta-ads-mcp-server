@@ -1,11 +1,11 @@
 {
   "manifest_version": "0.3",
   "name": "meta-ads-mcp-server",
-  "display_name": "Meta Ads by Get MCP Ads",
-  "version": "1.1.0",
-  "description": "Meta Ads MCP server: 39 read tools, 23 opt-in preview-first writes.",
+  "display_name": "Meta Ads by getmcpads",
+  "version": "2.0.0",
+  "description": "Meta Ads MCP server: 41 read tools, 23 opt-in preview-first writes.",
   "author": {
-    "name": "GetMCPAds",
+    "name": "getmcpads",
     "url": "https://www.getmcpads.com"
   },
   "homepage": "https://www.getmcpads.com/tools/meta-ads",
@@ -65,7 +65,7 @@
       "linux"
     ],
     "runtimes": {
-      "node": ">=18"
+      "node": ">=22.12"
     }
   }
 }

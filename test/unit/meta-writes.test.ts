@@ -11,6 +11,7 @@ let overrides:Record<string,any>;
 beforeEach(()=>{
  requests=[];overrides={};
  vi.stubGlobal('fetch',vi.fn(async(url:any,init:any={})=>{
+  expect(init.redirect).toBe("error");
   const u=new URL(String(url)),method=init.method||'GET';requests.push({url:u,method,body:new URLSearchParams(init.body),headers:new Headers(init.headers)});
   const node=u.pathname.split('/').pop()!;
   const value=overrides[`${method}:${node}`]??(method==='POST'?{id:'900',copied_adset_id:'900',success:true}:{id:node,account_id:'123',currency:'EUR',business:{id:'55'},product_catalog:{id:'600'},campaign_id:'200',status:'PAUSED',daily_budget:'0',lifetime_budget:'0'});
@@ -103,4 +104,43 @@ it('reads both ad status fields immediately after creating a paused ad',async()=
  overrides['GET:900']={id:'900',account_id:'123',status:'PAUSED',effective_status:'IN_PROCESS'};
  const r=await run('meta_create_ad',{...cases[4][1],confirm:true});expect(r.verification).toMatchObject({status:'PAUSED',effective_status:'IN_PROCESS'});
  expect(requests.at(-1)!.url.searchParams.get('fields')).toContain('effective_status');
+});
+it('does not verify paused creation if native readback returns active or a foreign account',async()=>{
+ for(const verification of [{id:'900',account_id:'123',status:'ACTIVE'},{id:'900',account_id:'999',status:'PAUSED'}]){
+  overrides['GET:900']=verification;
+  const r=await run('meta_create_campaign',{adAccountId:'123',name:'Paused only',objective:'OUTCOME_TRAFFIC',confirm:true});
+  expect(r).toMatchObject({applied:true,result:{id:'900'},verification:{confirmed:false}});
+ }
+});
+it('uses a custom conversion without resubmitting its pixel and rejects the conflicting combination locally',async()=>{
+ const args={adAccountId:'123',campaignId:'200',name:'Custom conversion',currency:'EUR',dailyBudget:5,configuration:{optimization_goal:'OFFSITE_CONVERSIONS',billing_event:'IMPRESSIONS',targeting:{geo_locations:{countries:['FR']},locales:[9]},promoted_object:{custom_conversion_id:'800'}}};
+ const preview=await run('meta_create_adset',args);expect(preview.payload.promoted_object).toEqual({custom_conversion_id:'800'});
+ const before=requests.length;
+ const invalid=await run('meta_create_adset',{...args,configuration:{...args.configuration,promoted_object:{custom_conversion_id:'800',pixel_id:'700'}},confirm:true});
+ expect(invalid.error).toContain('without pixel_id');expect(requests).toHaveLength(before);
+});
+it('rejects the legacy nested audience exclusion field before sending it to Meta',async()=>{
+ const result=await run('meta_create_adset',{adAccountId:'123',campaignId:'200',name:'Audience fixture',currency:'EUR',dailyBudget:5,configuration:{optimization_goal:'OFFSITE_CONVERSIONS',billing_event:'IMPRESSIONS',targeting:{geo_locations:{countries:['FR']},exclusions:{custom_audiences:[{id:'700'}]}}},confirm:true});
+ expect(result.error).toContain('targeting.excluded_custom_audiences');expect(requests).toHaveLength(0);
+});
+
+it.each([
+ [{link_data:{image_hash:'requested'}},{link_data:{image_hash:'old-canvas-cover'}},false],
+ [{video_data:{video_id:'123',image_hash:'thumb'}},{video_data:{video_id:'456',image_hash:'thumb'}},false],
+ [{link_data:{child_attachments:[{image_hash:'a'},{image_hash:'b'}]}},{link_data:{child_attachments:[{image_hash:'b'},{image_hash:'a'}]}},false],
+ [{link_data:{image_hash:'requested'}},{},false],
+ [{link_data:{image_hash:'requested'}},{link_data:{image_hash:'requested'}},true],
+])('verifies actual creative media before dependent ads can proceed',async(requested,returned,confirmed)=>{
+ overrides['GET:900']={id:'900',account_id:'123',object_story_spec:{page_id:'44',...returned}};
+ const r=await run('meta_create_adcreative',{...common,name:'Creative',spec:{object_story_spec:{page_id:'44',...requested}},confirm:true});
+ expect(r).toMatchObject({applied:true,result:{id:'900'},verification:{confirmed}});
+ if(!confirmed)expect(r.differences.some((d:any)=>/image_hash|video_id/.test(d.field))).toBe(true);
+ expect(requests.filter(r=>r.method==='POST')).toHaveLength(1);
+ expect(requests.at(-1)!.url.searchParams.get('fields')).toContain('object_story_spec');
+});
+it('checks asset-feed image hashes as well as story media',async()=>{
+ overrides['GET:900']={id:'900',account_id:'123',object_story_spec:{page_id:'44'},asset_feed_spec:{images:[{hash:'unexpected'}]}};
+ const r=await run('meta_create_adcreative',{...common,name:'Creative',spec:{object_story_spec:{page_id:'44'},asset_feed_spec:{images:[{hash:'requested'}]}},confirm:true});
+ expect(r.verification.confirmed).toBe(false);
+ expect(r.differences).toContainEqual({field:'asset_feed_spec.images.0.hash',requested:'requested',returned:'unexpected'});
 });

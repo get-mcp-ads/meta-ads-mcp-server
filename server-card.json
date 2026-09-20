@@ -1,8 +1,8 @@
 {
   "serverInfo": {
     "name": "@getmcpads/meta-ads-mcp-server",
-    "title": "Meta Ads MCP server: 39 read tools, 23 opt-in preview-first writes.",
-    "version": "1.1.0",
+    "title": "Meta Ads MCP server: 41 read tools, 23 opt-in preview-first writes.",
+    "version": "2.0.0",
     "websiteUrl": "https://www.getmcpads.com/tools/meta-ads",
     "icons": [
       {
@@ -48,7 +48,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -138,7 +138,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -210,7 +210,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -290,7 +290,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -371,7 +371,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -454,7 +454,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -592,7 +592,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -678,7 +678,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -768,7 +768,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -866,7 +866,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -1036,7 +1036,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -1138,7 +1138,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -1225,7 +1225,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -1340,7 +1340,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -1395,7 +1395,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -1459,7 +1459,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -1544,7 +1544,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -1633,7 +1633,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -1726,7 +1726,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -1948,7 +1948,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -2016,7 +2016,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -2094,7 +2094,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -2174,7 +2174,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -2238,7 +2238,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -2302,7 +2302,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -2387,7 +2387,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -2468,7 +2468,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -2523,7 +2523,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -2623,7 +2623,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -2708,7 +2708,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -2953,7 +2953,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -3237,7 +3237,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -3356,7 +3356,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -3431,7 +3431,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -3532,7 +3532,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -3626,7 +3626,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -3705,7 +3705,195 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "meta_get_entity_configuration",
+      "title": "meta get entity configuration",
+      "description": "Read a specific entity in its ad account for reconciliation. Read-only; never creates, changes or retries the entity. Missing or normalized fields must be inspected before claiming an exact match.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "adAccountId": {
+            "type": "string",
+            "pattern": "^(act_)?\\d+$",
+            "description": "Owning advertising account ID. Use the exact ID returned by account discovery; do not substitute a campaign or business ID."
+          },
+          "entityId": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Exact entity ID saved in the acknowledged creation receipt."
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "name",
+                "status",
+                "objective",
+                "daily_budget",
+                "lifetime_budget",
+                "special_ad_categories",
+                "special_ad_category_country",
+                "bid_strategy",
+                "campaign_id",
+                "optimization_goal",
+                "billing_event",
+                "targeting",
+                "promoted_object",
+                "bid_amount",
+                "bid_constraints",
+                "start_time",
+                "end_time",
+                "attribution_spec",
+                "destination_type",
+                "is_dynamic_creative",
+                "dsa_beneficiary",
+                "dsa_payor",
+                "adset_id",
+                "creative",
+                "tracking_specs",
+                "conversion_domain",
+                "object_story_spec",
+                "asset_feed_spec",
+                "object_story_id",
+                "instagram_actor_id",
+                "instagram_user_id",
+                "url_tags",
+                "degrees_of_freedom_spec",
+                "is_adset_budget_sharing_enabled"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 40,
+            "description": "Exact fields to re-read from the reviewed native creation payload. IDs and account ownership are always checked."
+          }
+        },
+        "required": [
+          "adAccountId",
+          "entityId",
+          "fields"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": true
+              },
+              {
+                "type": "array",
+                "items": {}
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "meta_get_uploaded_video",
+      "title": "meta get uploaded video",
+      "description": "Check video processing and membership in the selected account library. If the first page misses the ID, use the video title to narrow the account-scoped lookup. A direct video read alone never proves membership or readiness. Bounded pagination; not_found is not success.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "adAccountId": {
+            "type": "string",
+            "pattern": "^(act_)?\\d+$",
+            "description": "Owning advertising account ID. Use the exact ID returned by account discovery; do not substitute a campaign or business ID."
+          },
+          "videoId": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Exact uploaded video ID returned by Meta in this account."
+          }
+        },
+        "required": [
+          "adAccountId",
+          "videoId"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": true
+              },
+              {
+                "type": "array",
+                "items": {}
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -3776,7 +3964,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -3854,7 +4042,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -3867,6 +4055,428 @@
         "readOnlyHint": true,
         "destructiveHint": false,
         "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "meta_create_campaign",
+      "title": "meta create campaign",
+      "description": "Create a PAUSED Meta campaign with either ad set budgets (omit campaign budget), a daily campaign budget, or a lifetime campaign budget. Supports native validate_only. Local preview by default. No automatic retry. Account ownership is checked before Meta validation or mutation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "adAccountId": {
+            "type": "string",
+            "pattern": "^(act_)?\\d+$",
+            "description": "Selected owning ad account ID, with or without act_. Every referenced ad object must belong to it."
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400,
+            "description": "Exact business name to give this object. Do not derive it from an uploaded filename."
+          },
+          "objective": {
+            "type": "string",
+            "enum": [
+              "OUTCOME_TRAFFIC",
+              "OUTCOME_SALES",
+              "OUTCOME_LEADS",
+              "OUTCOME_AWARENESS",
+              "OUTCOME_ENGAGEMENT",
+              "OUTCOME_APP_PROMOTION"
+            ],
+            "description": "objective"
+          },
+          "specialAdCategories": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "NONE",
+                "HOUSING",
+                "EMPLOYMENT",
+                "CREDIT",
+                "ISSUES_ELECTIONS_POLITICS"
+              ]
+            },
+            "description": "Required special categories; omit for none."
+          },
+          "adsetBudgetSharing": {
+            "type": "boolean",
+            "default": false,
+            "description": "Explicit ad set budget sharing choice; only with ad set budgets."
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$",
+            "description": "Required with any monetary amount. Must match the actual account currency; never assume EUR."
+          },
+          "dailyBudget": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 1000000,
+            "description": "Daily budget in major account-currency units. Mutually exclusive with lifetimeBudget."
+          },
+          "lifetimeBudget": {
+            "$ref": "#/properties/dailyBudget",
+            "description": "Total lifetime budget in major account-currency units. Requires bounded ad set schedules; mutually exclusive with dailyBudget."
+          },
+          "bidStrategy": {
+            "type": "string",
+            "enum": [
+              "LOWEST_COST_WITHOUT_CAP",
+              "LOWEST_COST_WITH_BID_CAP",
+              "COST_CAP",
+              "LOWEST_COST_WITH_MIN_ROAS"
+            ],
+            "description": "bidStrategy"
+          },
+          "startTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Optional new start time as ISO 8601 with explicit UTC offset."
+          },
+          "endTime": {
+            "$ref": "#/properties/startTime",
+            "description": "Optional new end time as ISO 8601 with explicit UTC offset, after the start."
+          },
+          "confirm": {
+            "type": "boolean",
+            "description": "Apply only when true. Default is a local preview with no API mutation."
+          },
+          "validateOnly": {
+            "type": "boolean",
+            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm."
+          }
+        },
+        "required": [
+          "adAccountId",
+          "name",
+          "objective"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": true
+              },
+              {
+                "type": "array",
+                "items": {}
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "meta_update_adset_budget",
+      "title": "meta update adset budget",
+      "description": "Change an ad set daily or lifetime budget after checking its parent budget and existing schedule. Status stays unchanged. Local preview by default. No automatic retry. Account ownership is checked before Meta validation or mutation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "adAccountId": {
+            "type": "string",
+            "pattern": "^(act_)?\\d+$",
+            "description": "Selected owning ad account ID, with or without act_. Every referenced ad object must belong to it."
+          },
+          "adSetId": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Numeric ID of the existing ad set in the selected account."
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$",
+            "description": "Required with any monetary amount. Must match the actual account currency; never assume EUR."
+          },
+          "dailyBudget": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 1000000,
+            "description": "Daily budget in major account-currency units. Mutually exclusive with lifetimeBudget."
+          },
+          "lifetimeBudget": {
+            "$ref": "#/properties/dailyBudget",
+            "description": "Total lifetime budget in major account-currency units. Requires bounded ad set schedules; mutually exclusive with dailyBudget."
+          },
+          "confirm": {
+            "type": "boolean",
+            "description": "Apply only when true. Default is a local preview with no API mutation."
+          },
+          "validateOnly": {
+            "type": "boolean",
+            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm."
+          }
+        },
+        "required": [
+          "adAccountId",
+          "adSetId"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": true
+              },
+              {
+                "type": "array",
+                "items": {}
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "meta_update_adset_schedule",
+      "title": "meta update adset schedule",
+      "description": "Change start and/or end time using ISO 8601 with an explicit offset. Check the resulting range against existing dates before any mutation. Local preview by default. No automatic retry. Account ownership is checked before Meta validation or mutation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "adAccountId": {
+            "type": "string",
+            "pattern": "^(act_)?\\d+$",
+            "description": "Selected owning ad account ID, with or without act_. Every referenced ad object must belong to it."
+          },
+          "adSetId": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Numeric ID of the existing ad set in the selected account."
+          },
+          "startTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Optional new start time as ISO 8601 with explicit UTC offset."
+          },
+          "endTime": {
+            "$ref": "#/properties/startTime",
+            "description": "Optional new end time as ISO 8601 with explicit UTC offset, after the start."
+          },
+          "confirm": {
+            "type": "boolean",
+            "description": "Apply only when true. Default is a local preview with no API mutation."
+          },
+          "validateOnly": {
+            "type": "boolean",
+            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm."
+          }
+        },
+        "required": [
+          "adAccountId",
+          "adSetId"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": true
+              },
+              {
+                "type": "array",
+                "items": {}
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "meta_update_campaign_budget",
+      "title": "meta update campaign budget",
+      "description": "Change an existing campaign-owned budget after verifying currency and ownership. Does not convert an ad-set-budget campaign or change status. Local preview by default. No automatic retry. Account ownership is checked before Meta validation or mutation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "adAccountId": {
+            "type": "string",
+            "pattern": "^(act_)?\\d+$",
+            "description": "Selected owning ad account ID, with or without act_. Every referenced ad object must belong to it."
+          },
+          "campaignId": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Numeric ID of the parent campaign in the selected account. Its budget model and objective determine compatible ad set settings."
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$",
+            "description": "Required with any monetary amount. Must match the actual account currency; never assume EUR."
+          },
+          "dailyBudget": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 1000000,
+            "description": "Daily budget in major account-currency units. Mutually exclusive with lifetimeBudget."
+          },
+          "lifetimeBudget": {
+            "$ref": "#/properties/dailyBudget",
+            "description": "Total lifetime budget in major account-currency units. Requires bounded ad set schedules; mutually exclusive with dailyBudget."
+          },
+          "confirm": {
+            "type": "boolean",
+            "description": "Apply only when true. Default is a local preview with no API mutation."
+          },
+          "validateOnly": {
+            "type": "boolean",
+            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm."
+          }
+        },
+        "required": [
+          "adAccountId",
+          "campaignId"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": true
+              },
+              {
+                "type": "array",
+                "items": {}
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
         "openWorldHint": true
       },
       "execution": {
@@ -4050,7 +4660,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -4239,7 +4849,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -4332,7 +4942,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -4461,7 +5071,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -4561,7 +5171,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -4646,7 +5256,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -4727,7 +5337,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -4819,7 +5429,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -4948,7 +5558,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -5049,7 +5659,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -5141,7 +5751,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -5237,7 +5847,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -5350,7 +5960,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -5432,7 +6042,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -5514,7 +6124,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -5596,201 +6206,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
-          }
-        },
-        "required": [
-          "result"
-        ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
-      },
-      "annotations": {
-        "readOnlyHint": false,
-        "destructiveHint": true,
-        "idempotentHint": false,
-        "openWorldHint": true
-      },
-      "execution": {
-        "taskSupport": "forbidden"
-      }
-    },
-    {
-      "name": "meta_create_campaign",
-      "title": "meta create campaign",
-      "description": "Create a Meta campaign. It is always created PAUSED and there is no option to create it active. Previews by default.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "adAccountId": {
-            "type": "string",
-            "description": "Ad account, act_… or bare ID."
-          },
-          "name": {
-            "type": "string",
-            "description": "Name to set. This is the only thing the call changes."
-          },
-          "objective": {
-            "type": "string",
-            "enum": [
-              "OUTCOME_TRAFFIC",
-              "OUTCOME_SALES",
-              "OUTCOME_LEADS",
-              "OUTCOME_AWARENESS",
-              "OUTCOME_ENGAGEMENT",
-              "OUTCOME_APP_PROMOTION"
-            ],
-            "description": "Campaign objective."
-          },
-          "specialAdCategories": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "enum": [
-                "NONE",
-                "HOUSING",
-                "EMPLOYMENT",
-                "CREDIT",
-                "ISSUES_ELECTIONS_POLITICS"
-              ]
-            },
-            "description": "Required by Meta. Defaults to none."
-          },
-          "adsetBudgetSharing": {
-            "type": "boolean",
-            "default": false,
-            "description": "Explicit ad set budget sharing choice required by Meta. Defaults to false."
-          },
-          "confirm": {
-            "type": "boolean",
-            "description": "Set to true to actually apply the change. Without it, the tool only previews."
-          }
-        },
-        "required": [
-          "adAccountId",
-          "name",
-          "objective"
-        ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
-      },
-      "outputSchema": {
-        "type": "object",
-        "properties": {
-          "result": {
-            "anyOf": [
-              {
-                "type": "object",
-                "properties": {},
-                "additionalProperties": true
-              },
-              {
-                "type": "array",
-                "items": {}
-              },
-              {
-                "type": "string"
-              },
-              {
-                "type": "number"
-              },
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
-          }
-        },
-        "required": [
-          "result"
-        ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
-      },
-      "annotations": {
-        "readOnlyHint": false,
-        "destructiveHint": true,
-        "idempotentHint": false,
-        "openWorldHint": true
-      },
-      "execution": {
-        "taskSupport": "forbidden"
-      }
-    },
-    {
-      "name": "meta_update_adset_budget",
-      "title": "meta update adset budget",
-      "description": "Change the daily or lifetime budget of a Meta ad set. Amount in the account currency (12.50 for 12.50 EUR). Meta expects minor units, the conversion is done here. Previews by default.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "adSetId": {
-            "type": "string",
-            "description": "Ad set ID."
-          },
-          "adAccountId": {
-            "type": "string",
-            "description": "Owning ad account, with or without the act_ prefix."
-          },
-          "currency": {
-            "type": "string",
-            "pattern": "^[A-Z]{3}$",
-            "description": "Actual account currency. Required to avoid incorrect unit conversion."
-          },
-          "dailyBudget": {
-            "type": "number",
-            "exclusiveMinimum": 0,
-            "description": "Daily budget."
-          },
-          "lifetimeBudget": {
-            "type": "number",
-            "exclusiveMinimum": 0,
-            "description": "Lifetime budget, mutually exclusive with the daily budget."
-          },
-          "confirm": {
-            "type": "boolean",
-            "description": "Set to true to actually apply the change. Without it, the tool only previews."
-          }
-        },
-        "required": [
-          "adSetId",
-          "adAccountId",
-          "currency"
-        ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
-      },
-      "outputSchema": {
-        "type": "object",
-        "properties": {
-          "result": {
-            "anyOf": [
-              {
-                "type": "object",
-                "properties": {},
-                "additionalProperties": true
-              },
-              {
-                "type": "array",
-                "items": {}
-              },
-              {
-                "type": "string"
-              },
-              {
-                "type": "number"
-              },
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -5870,7 +6286,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -5950,7 +6366,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
@@ -6030,178 +6446,7 @@
                 "type": "null"
               }
             ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
-          }
-        },
-        "required": [
-          "result"
-        ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
-      },
-      "annotations": {
-        "readOnlyHint": false,
-        "destructiveHint": true,
-        "idempotentHint": false,
-        "openWorldHint": true
-      },
-      "execution": {
-        "taskSupport": "forbidden"
-      }
-    },
-    {
-      "name": "meta_update_campaign_budget",
-      "title": "meta update campaign budget",
-      "description": "Change the budget of a Meta campaign that holds its budget at campaign level (Advantage campaign budget). On a campaign without one, Meta refuses and the ad set budget is the one to change. Amount in the account currency. Previews by default.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "campaignId": {
-            "type": "string",
-            "description": "Campaign ID."
-          },
-          "adAccountId": {
-            "type": "string",
-            "description": "Owning ad account (act_… or bare ID)."
-          },
-          "currency": {
-            "type": "string",
-            "minLength": 3,
-            "maxLength": 3,
-            "description": "Account currency code, for example EUR. Read it with meta_get_ad_accounts."
-          },
-          "dailyBudget": {
-            "type": "number",
-            "exclusiveMinimum": 0,
-            "description": "New daily budget, in the account currency."
-          },
-          "lifetimeBudget": {
-            "type": "number",
-            "exclusiveMinimum": 0,
-            "description": "New lifetime budget, in the account currency."
-          },
-          "confirm": {
-            "type": "boolean",
-            "description": "Set to true to actually apply the change. Without it, the tool only previews."
-          }
-        },
-        "required": [
-          "campaignId",
-          "adAccountId",
-          "currency"
-        ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
-      },
-      "outputSchema": {
-        "type": "object",
-        "properties": {
-          "result": {
-            "anyOf": [
-              {
-                "type": "object",
-                "properties": {},
-                "additionalProperties": true
-              },
-              {
-                "type": "array",
-                "items": {}
-              },
-              {
-                "type": "string"
-              },
-              {
-                "type": "number"
-              },
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
-          }
-        },
-        "required": [
-          "result"
-        ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
-      },
-      "annotations": {
-        "readOnlyHint": false,
-        "destructiveHint": true,
-        "idempotentHint": false,
-        "openWorldHint": true
-      },
-      "execution": {
-        "taskSupport": "forbidden"
-      }
-    },
-    {
-      "name": "meta_update_adset_schedule",
-      "title": "meta update adset schedule",
-      "description": "Change the start or end time of a Meta ad set. Times are ISO 8601 with an offset, for example 2026-09-01T00:00:00+0200. Previews by default.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "adSetId": {
-            "type": "string",
-            "description": "Ad set ID."
-          },
-          "adAccountId": {
-            "type": "string",
-            "description": "Owning ad account (act_… or bare ID)."
-          },
-          "startTime": {
-            "type": "string",
-            "description": "Start time, ISO 8601 with an offset, for example 2026-09-01T00:00:00+0200."
-          },
-          "endTime": {
-            "type": "string",
-            "description": "End time, ISO 8601 with an offset, for example 2026-09-30T23:59:59+0200."
-          },
-          "confirm": {
-            "type": "boolean",
-            "description": "Set to true to actually apply the change. Without it, the tool only previews."
-          }
-        },
-        "required": [
-          "adSetId",
-          "adAccountId"
-        ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
-      },
-      "outputSchema": {
-        "type": "object",
-        "properties": {
-          "result": {
-            "anyOf": [
-              {
-                "type": "object",
-                "properties": {},
-                "additionalProperties": true
-              },
-              {
-                "type": "array",
-                "items": {}
-              },
-              {
-                "type": "string"
-              },
-              {
-                "type": "number"
-              },
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query. Existing MCP Apps fields are returned alongside result."
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
           }
         },
         "required": [
