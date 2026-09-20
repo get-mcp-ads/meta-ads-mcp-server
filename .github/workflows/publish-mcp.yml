@@ -1,15 +1,18 @@
-# Publishes this server to the official MCP Registry when a version tag is pushed.
+# Publish an already released npm version to the MCP Registry explicitly.
 #
-# Order matters: the registry verifies ownership by reading `mcpName` from the
-# package already published on npm. So publish to npm first, then tag. A tag
-# pushed before the npm release fails here, on purpose, rather than registering
-# a version nobody can install.
+# GitHub source releases can precede npm publication. Run this workflow only
+# after the matching npm package exists; its ownership metadata is required
+# by the registry. Select an existing stable release tag.
 name: Publish to MCP Registry
 
 on:
-  push:
-    tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing release tag whose package is already published on npm"
+        required: true
+        type: string
+        default: "v2.0.0"
 
 permissions:
   contents: read
@@ -19,6 +22,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag }}
 
       - uses: actions/setup-node@v7
         with:
@@ -31,8 +36,15 @@ jobs:
       - run: npm test
 
       - name: Check the tag matches the manifests
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
         run: |
-          TAG="${GITHUB_REF#refs/tags/v}"
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Select an existing stable version tag such as v2.0.0."
+            exit 1
+          fi
+          git show-ref --verify "refs/tags/$RELEASE_TAG"
+          TAG="${RELEASE_TAG#v}"
           PKG=$(node -p "require('./package.json').version")
           SRV=$(node -p "require('./server.json').version")
           if [ "$TAG" != "$PKG" ] || [ "$TAG" != "$SRV" ]; then
