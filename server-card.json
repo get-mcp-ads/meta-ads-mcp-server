@@ -2,7 +2,7 @@
   "serverInfo": {
     "name": "@getmcpads/meta-ads-mcp-server",
     "title": "Meta Ads MCP server: 41 read tools, 23 opt-in preview-first writes.",
-    "version": "2.0.0",
+    "version": "2.0.1",
     "websiteUrl": "https://www.getmcpads.com/tools/meta-ads",
     "icons": [
       {
