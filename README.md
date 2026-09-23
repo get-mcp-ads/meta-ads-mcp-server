@@ -6,8 +6,9 @@
 
 Compare campaign performance, inspect delivery and prepare changes from your MCP client.
 
-[![Release](https://img.shields.io/github/v/release/getmcpads-com/meta-ads-mcp-server?color=2448e5)](https://github.com/get-mcp-ads/meta-ads-mcp-server/releases/latest)
+[![Release](https://img.shields.io/github/v/release/get-mcp-ads/meta-ads-mcp-server?color=2448e5)](https://github.com/get-mcp-ads/meta-ads-mcp-server/releases/latest)
 [![CI](https://github.com/get-mcp-ads/meta-ads-mcp-server/actions/workflows/ci.yml/badge.svg)](https://github.com/get-mcp-ads/meta-ads-mcp-server/actions/workflows/ci.yml)
+[![Smithery](https://smithery.ai/badge/hello-6k33/getmcpads-meta-ads)](https://smithery.ai/servers/hello-6k33/getmcpads-meta-ads)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%E2%89%A522.12-brightgreen.svg)](package.json)
 
