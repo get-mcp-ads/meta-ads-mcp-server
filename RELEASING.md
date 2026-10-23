@@ -12,3 +12,5 @@ A version tag publishes a release. The `release.yml` workflow publishes npm, the
 Each step skips cleanly when its target already holds the version, so rerunning a partial release is safe. To rerun a release, start **Release** from GitHub Actions and enter the existing tag.
 
 The README distinguishes source installation from package installation, because the GitHub tag can exist before npm and the registry list the version.
+
+Before tagging, add the release to CHANGELOG.md as `## X.Y.Z - YYYY-MM-DD - Title`, then run `npm run release-history`. The README shows every release from the changelog, and the test suite fails when it falls behind.

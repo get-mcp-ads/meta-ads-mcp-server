@@ -28,17 +28,35 @@ Run locally with your own platform credentials and a client that supports stdio 
 
 ## What's new
 
+<!-- release-history:start -->
 **[v2.1.0: Gateway sync and runtime security update](https://github.com/get-mcp-ads/meta-ads-mcp-server/releases/tag/v2.1.0) · October 23, 2026**
 
-- Add `meta_rename_ad_account` and `meta_get_promotable_apps`.
-- Accept website and app creatives, and return the creative requirements of a website and app ad set.
-- Add campaign, ad set, status and dimension filters to `meta_get_insights`, and keep missing revenue distinct from zero.
-- Report conclusive refusals and uncertain write outcomes separately. No write is retried.
-- Fall back to the user's identity and granted permissions when Meta refuses token inspection.
-- Require a Node.js release with the October 2026 security fixes, and warn on stderr when the runtime lacks them.
-- Update the MCP SDK to 1.32.1. CI audits runtime dependencies on Node 22, 24 and 26.
+- Add `meta_rename_ad_account` (write) and `meta_get_promotable_apps` (read), synchronized from getmcpads revision 3e1c2c8. The server exposes 42 read tools and 24 write tools.
+- Accept `applink_treatment` and `omnichannel_link_spec` on new creatives, validate website and app promoted objects, and return the creative requirements of a website and app ad set from `meta_get_adset_configuration`.
+- Add `campaignIds`, `adsetIds`, `effectiveStatus`, `dimensions` and `actionBreakdowns` to `meta_get_insights`. A request for `conversions` or `conversion_values` also reads the action arrays that carry purchases, leads and revenue, and the response lists the metrics it added.
+- Return quality rankings as text at ad level, keep missing revenue distinct from zero revenue, and compute website and app order values from their own purchase events.
+- Report a security checkpoint or a missing creative destination on a confirmed ad creation as a conclusive refusal. A server error, an ambiguous receipt or an unclear validation result is reported as an unknown outcome. No write is retried.
+- Fall back to `/me` and `/me/permissions` in `meta_health_check` and `meta_debug_token` when Meta refuses token inspection. A check that could not run is reported as unknown, not as a missing permission.
+- Send the access token in the Authorization header on every request, redact it from provider errors and logs, and stop reading a response after 25 MB.
+- Require Node.js 22.23.4 or newer on the 22 line, 24.22.1 or newer on the 24 line, or 26.12.1 or newer. An older runtime starts with a warning on stderr, and `npm run doctor` reports the same check.
+- Update `@modelcontextprotocol/sdk` to 1.32.1 and regenerate the lockfile. `npm audit --omit=dev` reports no vulnerabilities.
+- Run CI on Node 22, 24 and 26 every week and on every change, with a runtime dependency audit. Publish from version tags with `release.yml`, which replaces `publish-mcp.yml`.
 
-[Full changelog](CHANGELOG.md) · [Source synchronization details](SOURCE_SYNC.md) · [All releases](https://github.com/get-mcp-ads/meta-ads-mcp-server/releases)
+**Earlier releases**
+
+| Version | Date | Highlights |
+| --- | --- | --- |
+| 2.0.1 | September 23, 2026 | Public repository restored |
+| 2.0.0 | September 20, 2026 | Gateway sync and security fixes |
+| 1.1.0 | September 13, 2026 | Platform capability sync and quality contracts |
+| 1.0.2 | August 30, 2026 | Announce the package version over MCP. |
+| 1.0.1 | August 30, 2026 | Add `server.json` and `mcpName` for the official MCP Registry, under `com.getmcpads/meta-ads`. |
+| 1.0.0 | August 29, 2026 | First open-source release |
+
+[Full changelog](CHANGELOG.md) · [All releases](https://github.com/get-mcp-ads/meta-ads-mcp-server/releases)
+<!-- release-history:end -->
+
+Source synchronization: [SOURCE_SYNC.md](SOURCE_SYNC.md).
 
 ### Upgrade notes
 
