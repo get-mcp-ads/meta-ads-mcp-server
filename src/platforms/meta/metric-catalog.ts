@@ -665,7 +665,7 @@ export const METRIC_CATALOG: MetricDefinition[] = [
   {
     key: "conversions",
     name: "Conversions",
-    description: "Tracked conversion events (purchases) from Meta Pixel, Conversions API, or App SDK.",
+    description: "Native conversions array, not a universal purchase or lead total; request actions or explicit purchases/omni_purchases/leads metrics for those events. An absent conversions field does not establish their absence.",
     category: "conversion",
     type: "native",
     format: "number",
@@ -676,7 +676,7 @@ export const METRIC_CATALOG: MetricDefinition[] = [
   {
     key: "conversion_values",
     name: "Conversion Values",
-    description: "Total monetary value of all conversions (purchases).",
+    description: "Native conversion_values array; purchase revenue is available by the exact purchase action_type in action_values, not necessarily in this field.",
     category: "conversion",
     type: "native",
     format: "currency",
@@ -1118,7 +1118,8 @@ export const METRIC_CATALOG: MetricDefinition[] = [
     description: "How your ad's perceived quality compared to competing ads.",
     category: "delivery",
     type: "native",
-    format: "number",
+    format: "string",
+    levelRestrictions: ["ad"],
     compatibleBreakdowns: [],
   },
   {
@@ -1127,7 +1128,8 @@ export const METRIC_CATALOG: MetricDefinition[] = [
     description: "Your ad's expected engagement rate compared to competitors.",
     category: "delivery",
     type: "native",
-    format: "number",
+    format: "string",
+    levelRestrictions: ["ad"],
     compatibleBreakdowns: [],
   },
   {
@@ -1136,7 +1138,8 @@ export const METRIC_CATALOG: MetricDefinition[] = [
     description: "Expected conversion rate compared to competitors with same optimization goal.",
     category: "delivery",
     type: "native",
-    format: "number",
+    format: "string",
+    levelRestrictions: ["ad"],
     compatibleBreakdowns: [],
   },
 

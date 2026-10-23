@@ -12,6 +12,7 @@ import { measurementParams } from "./reporting-context.js";
 
 import { logger } from "../../core/logger.js";
 import { RateLimiter } from "../../core/rate-limiter.js";
+import { readBoundedJson, ResponseTooLargeError } from "../../core/http.js";
 
 // ============================================
 // CONSTANTS
@@ -101,6 +102,16 @@ export interface MetaApiError {
   error_user_msg?: string;
   error_user_title?: string;
   fbtrace_id?: string;
+}
+
+export interface MetaTokenInfo {
+  app_id?: string;
+  user_id?: string;
+  type?: string;
+  expires_at?: number;
+  data_access_expires_at?: number;
+  is_valid: boolean;
+  scopes?: string[];
 }
 
 export interface MetaAdAccount {
@@ -367,6 +378,25 @@ export class MetaClient {
   }
 
   /**
+   * Meta can echo request values in error text. Keep the bearer credential
+   * out of logs and tool errors, including when the diagnostic itself fails.
+   */
+  private safeApiError(error: MetaApiError, fallbackCode: number): MetaApiError {
+    const redact = (value: unknown): string | undefined => typeof value === "string"
+      ? value.replaceAll(this.accessToken, "[redacted]")
+      : undefined;
+    return {
+      message: redact(error.message) ?? `Meta HTTP ${fallbackCode}`,
+      type: redact(error.type) ?? "OAuthException",
+      code: typeof error.code === "number" ? error.code : fallbackCode,
+      error_subcode: typeof error.error_subcode === "number" ? error.error_subcode : undefined,
+      error_user_msg: redact(error.error_user_msg),
+      error_user_title: redact(error.error_user_title),
+      fbtrace_id: redact(error.fbtrace_id),
+    };
+  }
+
+  /**
    * Fetch any Meta Graph API URL (with rate limiting and access token).
    * Useful for tools that build URLs directly.
    */
@@ -374,14 +404,27 @@ export class MetaClient {
     const trustedUrl = trustedMetaGraphUrl(url, this.apiVersion);
     return this.rateLimiter.execute(async () => {
       logger.debug("meta", `fetchUrl: ${trustedUrl.origin}${trustedUrl.pathname}`);
-      const response = await fetch(trustedUrl, {
-        headers: { Authorization: `Bearer ${this.accessToken}` },
-        signal: AbortSignal.timeout(META_REQUEST_TIMEOUT_MS),
-      redirect: "error"});
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({})) as Record<string, unknown>;
-        const errorInfo = (errorData.error ?? {}) as Record<string, unknown>;
-        throw new MetaApiException({
+      let response: Response;
+      try {
+        response = await fetch(trustedUrl, {
+          headers: { Authorization: `Bearer ${this.accessToken}` },
+          signal: AbortSignal.timeout(META_REQUEST_TIMEOUT_MS),
+          redirect: "error",
+        });
+      } catch {
+        throw new Error("Meta could not be reached for this read-only request.");
+      }
+      let data: Record<string, unknown> | null;
+      try {
+        data = await readBoundedJson<Record<string, unknown> | null>(response);
+      } catch (error) {
+        if (error instanceof ResponseTooLargeError) throw error;
+        if (!response.ok) data = null;
+        else throw new Error("Meta returned an unreadable response to this read-only request.");
+      }
+      if (!response.ok || (data && typeof data === "object" && "error" in data && data.error)) {
+        const errorInfo = (data?.error ?? {}) as Record<string, unknown>;
+        throw new MetaApiException(this.safeApiError({
           message: (errorInfo.message as string) ?? `HTTP ${response.status}`,
           type: (errorInfo.type as string) ?? "OAuthException",
           code: (errorInfo.code as number) ?? response.status,
@@ -389,14 +432,18 @@ export class MetaClient {
           error_user_msg: errorInfo.error_user_msg as string | undefined,
           error_user_title: errorInfo.error_user_title as string | undefined,
           fbtrace_id: errorInfo.fbtrace_id as string | undefined,
-        });
+        }, response.status));
       }
-      return response.json() as Promise<Record<string, unknown>>;
+      if (!data || typeof data !== "object" || Array.isArray(data)) {
+        throw new Error("Meta returned an invalid response to this read-only request.");
+      }
+      return data;
     });
   }
 
   /**
-   * Make a rate-limited GET API request.
+   * Make a rate-limited GET API request. The token travels in the
+   * Authorization header, never in the URL.
    */
   private async request<T>(
     endpoint: string,
@@ -404,9 +451,6 @@ export class MetaClient {
   ): Promise<T> {
     return this.rateLimiter.execute(async () => {
       const url = new URL(`${this.getBaseUrl()}${endpoint}`);
-
-      // Add access token
-      url.searchParams.append("access_token", this.accessToken);
 
       // Add additional params
       if (params) {
@@ -419,20 +463,36 @@ export class MetaClient {
         fields: params?.fields?.slice(0, 120) ?? "(none)",
       });
 
-      const response = await fetch(url.toString(), {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        signal: AbortSignal.timeout(META_REQUEST_TIMEOUT_MS),
-      redirect: "error"});
+      let response: Response;
+      try {
+        response = await fetch(url.toString(), {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${this.accessToken}`,
+          },
+          signal: AbortSignal.timeout(META_REQUEST_TIMEOUT_MS),
+          redirect: "error",
+        });
+      } catch {
+        throw new Error("Meta could not be reached for this read-only request.");
+      }
 
-      const data = (await response.json()) as Record<string, unknown>;
+      let data: Record<string, unknown>;
+      try { data = await readBoundedJson<Record<string, unknown>>(response); }
+      catch (error) {
+        if (error instanceof ResponseTooLargeError) throw error;
+        throw new Error("Meta returned an unreadable response to this read-only request.");
+      }
+      if (!data || typeof data !== "object" || Array.isArray(data)) {
+        throw new Error("Meta returned an invalid response to this read-only request.");
+      }
 
-      // Check for errors
-      if (data.error) {
-        logger.error("meta", `API error on ${endpoint}`, data.error);
-        throw new MetaApiException(data.error as MetaApiError);
+      // Check for errors, including an error body on HTTP 200
+      if (!response.ok || data.error) {
+        const safeError = this.safeApiError((data.error ?? {}) as MetaApiError, response.status);
+        logger.error("meta", `API error on ${endpoint}`, safeError);
+        throw new MetaApiException(safeError);
       }
 
       return data as T;
@@ -444,28 +504,52 @@ export class MetaClient {
   // ============================================
 
   /**
-   * Debug/verify access token.
+   * Inspect the configured token with itself. Meta answers only when the
+   * token's user develops or administers the app (System User tokens do);
+   * otherwise use getGrantedPermissions and getCurrentUserIdentity.
    */
-  async debugToken(): Promise<{
-    app_id: string;
-    user_id: string;
-    expires_at: number;
-    is_valid: boolean;
-    scopes: string[];
-  }> {
-    const response = await this.request<{
-      data: {
-        app_id: string;
-        user_id: string;
-        expires_at: number;
-        is_valid: boolean;
-        scopes: string[];
-      };
-    }>("/debug_token", {
+  async debugToken(): Promise<MetaTokenInfo> {
+    const response = await this.request<{ data?: MetaTokenInfo }>("/debug_token", {
       input_token: this.accessToken,
     });
+    const data = response.data;
+    if (!data || typeof data.is_valid !== "boolean") {
+      throw new Error("Meta token inspection returned incomplete metadata. Token validity and permissions remain unverified.");
+    }
+    // Return only known diagnostic metadata, never arbitrary provider fields.
+    return {
+      is_valid: data.is_valid,
+      ...(typeof data.app_id === "string" ? { app_id: data.app_id } : {}),
+      ...(typeof data.user_id === "string" ? { user_id: data.user_id } : {}),
+      ...(typeof data.type === "string" ? { type: data.type } : {}),
+      ...(typeof data.expires_at === "number" ? { expires_at: data.expires_at } : {}),
+      ...(typeof data.data_access_expires_at === "number" ? { data_access_expires_at: data.data_access_expires_at } : {}),
+      ...(Array.isArray(data.scopes) && data.scopes.every(scope => typeof scope === "string") ? { scopes: data.scopes } : {}),
+    };
+  }
 
-    return response.data;
+  /** The connecting user's grants, independently of token inspection. */
+  async getGrantedPermissions(): Promise<string[]> {
+    type PermissionPage = { data?: { permission: string; status: string }[]; paging?: { next?: string } };
+    const grants = new Set<string>();
+    let page = await this.request<PermissionPage>("/me/permissions", { limit: "100" });
+    for (let count = 1; count <= MAX_PAGINATION_PAGES; count++) {
+      if (!Array.isArray(page.data) || page.data.some(row => !row || typeof row.permission !== "string" || !["granted", "declined", "expired"].includes(row.status))) {
+        throw new Error("Meta permission inspection returned incomplete data. Granted permissions remain unknown.");
+      }
+      for (const row of page.data) if (row.status === "granted") grants.add(row.permission);
+      if (!page.paging?.next) return [...grants];
+      if (count === MAX_PAGINATION_PAGES) break;
+      const url = trustedMetaGraphUrl(page.paging.next, this.apiVersion, `/${this.apiVersion}/me/permissions`);
+      page = await this.fetchUrl(url.toString()) as PermissionPage;
+    }
+    throw new Error("Meta permission inspection was incomplete. Granted permissions remain unknown.");
+  }
+
+  async getCurrentUserIdentity(): Promise<{ id: string; name?: string }> {
+    const data = await this.request<{ id?: unknown; name?: unknown }>("/me", { fields: "id,name" });
+    if (typeof data.id !== "string" || !data.id) throw new Error("Meta did not return the connecting user's identity.");
+    return { id: data.id, ...(typeof data.name === "string" ? { name: data.name } : {}) };
   }
 
   // ============================================
@@ -1323,13 +1407,33 @@ export class MetaClient {
   private async fetchPaginatedUrl<T>(url: string, expectedPathname: string): Promise<T> {
     const trustedUrl = trustedMetaGraphUrl(url, this.apiVersion, expectedPathname);
     return this.rateLimiter.execute(async () => {
-      const response = await fetch(trustedUrl, {
-        headers: {
-          Authorization: `Bearer ${this.accessToken}`,
-        },
-        signal: AbortSignal.timeout(META_REQUEST_TIMEOUT_MS),
-      redirect: "error"});
-      return (await response.json()) as T;
+      let response: Response;
+      try {
+        response = await fetch(trustedUrl, {
+          headers: {
+            Authorization: `Bearer ${this.accessToken}`,
+          },
+          signal: AbortSignal.timeout(META_REQUEST_TIMEOUT_MS),
+          redirect: "error",
+        });
+      } catch {
+        throw new Error("Meta could not be reached while reading the next page.");
+      }
+      let data: Record<string, unknown> | null = null;
+      try { data = await readBoundedJson<Record<string, unknown> | null>(response); }
+      catch (error) {
+        if (error instanceof ResponseTooLargeError) throw error;
+        if (response.ok) throw new Error("Meta returned an unreadable page. Retry from the last cursor.");
+      }
+      // Callers decide whether an error page stops pagination or fails the
+      // read. They receive the provider error with the credential redacted.
+      if (!response.ok || (data && typeof data === "object" && data.error)) {
+        return { ...(data ?? {}), error: this.safeApiError((data?.error ?? {}) as MetaApiError, response.status) } as T;
+      }
+      if (!data || typeof data !== "object" || Array.isArray(data)) {
+        throw new Error("Meta returned an invalid page. Retry from the last cursor.");
+      }
+      return data as T;
     });
   }
 }

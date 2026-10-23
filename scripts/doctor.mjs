@@ -3,6 +3,7 @@
 import { promises as fs } from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const MCP = {
   displayName: "Meta Ads MCP",
@@ -12,7 +13,7 @@ const MCP = {
   claudeKeys: ["meta-ads-mcp", "facebook-mcp", "meta-ads-mcp"],
   requiredEnv: ["META_ACCESS_TOKEN"],
   requiredEnvAlternatives: [],
-  optionalEnv: ["META_API_VERSION", "LOG_LEVEL"],
+  optionalEnv: ["META_ENABLE_WRITES", "META_API_VERSION", "LOG_LEVEL"],
 };
 
 const CLAUDE_CONFIG_PATH = path.join(
@@ -171,6 +172,27 @@ function checkEnvironment(claudeEnvPresence) {
   };
 }
 
+// The same check the server runs at startup. The built module is preferred;
+// the TypeScript source works on Node releases that strip types by default.
+async function checkNodeRuntime() {
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+  for (const candidate of ["dist/runtime-check.js", "src/runtime-check.ts"]) {
+    try {
+      const { nodeRuntimeWarning } = await import(pathToFileURL(path.join(root, candidate)).href);
+      const warning = nodeRuntimeWarning();
+      return { name: "nodeRuntime", ok: !warning, version: process.versions.node, ...(warning ? { warning } : {}) };
+    } catch {
+      // Try the next candidate.
+    }
+  }
+  return {
+    name: "nodeRuntime",
+    ok: false,
+    version: process.versions.node,
+    warning: "The runtime check could not be loaded. Run npm run build, then rerun npm run doctor.",
+  };
+}
+
 async function checkPackageAndBuild() {
   const packageExists = await pathExists("package.json");
   const srcExists = await pathExists("src");
@@ -254,9 +276,14 @@ async function checkReadOnlyPosture() {
   };
 }
 
-function buildWarningsAndActions({ envCheck, packageCheck, claudeCheck, readOnlyCheck }) {
+function buildWarningsAndActions({ envCheck, packageCheck, claudeCheck, readOnlyCheck, runtimeCheck }) {
   const warnings = [];
   const nextActions = [];
+
+  if (!runtimeCheck.ok) {
+    warnings.push(runtimeCheck.warning);
+    nextActions.push("Install a Node.js release listed in package.json engines before running the server.");
+  }
 
   if (!envCheck.ok) {
     warnings.push("Missing required environment variables in both current process and matching Claude Desktop config.");
@@ -290,16 +317,18 @@ async function main() {
   const envCheck = checkEnvironment(claudeEnvPresence);
   const packageCheck = await checkPackageAndBuild();
   const readOnlyCheck = await checkReadOnlyPosture();
+  const runtimeCheck = await checkNodeRuntime();
   const { warnings, nextActions } = buildWarningsAndActions({
     envCheck,
     packageCheck,
     claudeCheck,
     readOnlyCheck,
+    runtimeCheck,
   });
-  const hardChecksOk = envCheck.ok && packageCheck.ok && claudeCheck.ok;
+  const hardChecksOk = runtimeCheck.ok && envCheck.ok && packageCheck.ok && claudeCheck.ok;
   const result = {
     ok: hardChecksOk,
-    checks: [envCheck, packageCheck, claudeCheck, readOnlyCheck],
+    checks: [runtimeCheck, envCheck, packageCheck, claudeCheck, readOnlyCheck],
     warnings,
     nextActions,
   };

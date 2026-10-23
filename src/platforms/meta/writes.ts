@@ -1,8 +1,7 @@
 /** Copyright 2026 GetMCPAds. SPDX-License-Identifier: Apache-2.0 */
 import { z } from "zod";
 import type { ToolShape } from "../../tool-quality.js";
-import { toMicroCurrency, toMicros, toMinorUnits, toPlainAmount } from "../../core/money.js";
-const ADS_BASE = "https://googleads.googleapis.com/v25";
+import { readBoundedText } from "../../core/http.js";
 import { registerMetaExtendedWrites, verifyMetaWriteScope } from "./extended-writes.js";
 type Handler = (args: Record<string, unknown>) => Promise<unknown>;
 type Collector = { tool: (n: string, d: string, s: ToolShape, h: Handler) => void };
@@ -16,12 +15,12 @@ function ko(message: string) {
 }
 
 /**
- * Toute écriture est un aperçu tant que `confirm` n'est pas vrai.
+ * Every write is a preview until `confirm` is true.
  *
- * C'est un assistant qui compose ces appels : il peut se tromper de compte, de
- * campagne ou d'ordre de grandeur sur un budget. Un aperçu obligatoire rend
- * l'erreur visible avant qu'elle ne coûte de l'argent, et donne à l'humain le
- * point d'arrêt que le protocole ne garantit pas.
+ * An assistant composes these calls: it can pick the wrong account, the wrong
+ * campaign or the wrong order of magnitude on a budget. A mandatory preview
+ * makes the mistake visible before it costs money, and gives a human the
+ * stopping point the protocol does not guarantee.
  */
 function preview(action: string, details: Record<string, unknown>) {
   return ok({
@@ -39,22 +38,36 @@ const confirmSchema = z
   .optional()
   .describe("Set to true to actually apply the change. Without it, the tool only previews.");
 
-async function request(url: string, init: RequestInit, contexte: string): Promise<unknown> {
-  const response = await fetch(url, { ...init, redirect: "error" });
-  const body = await response.text();
+/**
+ * One Graph mutation, never retried. A transport failure or a server error
+ * leaves the outcome unknown: the message says so, so the caller reads the
+ * object before trying again.
+ */
+async function request(url: string, init: RequestInit, context: string, accessToken: string): Promise<unknown> {
+  const redact = (text: string) => text.replaceAll(accessToken, "[redacted]");
+  let response: Response;
+  try {
+    response = await fetch(url, { ...init, signal: AbortSignal.timeout(30_000), redirect: "error" });
+  } catch {
+    throw new Error(`${context}: Meta could not be reached or did not answer in time. The outcome is unknown; read the object before retrying.`);
+  }
+  let body: string;
+  try {
+    body = await readBoundedText(response);
+  } catch {
+    throw new Error(`${context}: Meta returned an unreadable response. The outcome is unknown; read the object before retrying.`);
+  }
   let parsed: unknown;
   try {
     parsed = JSON.parse(body);
   } catch {
     parsed = body;
   }
-  if (!response.ok) {
-    if (url.startsWith(ADS_BASE + "/")) {
-      const error = (parsed as { error?: { message?: string; details?: { errors?: { errorCode?: unknown; message?: string; location?: unknown }[] }[] } })?.error;
-      const details = error?.details?.flatMap(d => d.errors ?? []).map(e => ({ code: e.errorCode, message: e.message, location: e.location }));
-      throw new Error(`${contexte}: ${JSON.stringify(details?.length ? details : error?.message ?? parsed).slice(0, 3000)}`);
-    }
-    throw new Error(`${contexte} : ${typeof parsed === "string" ? parsed.slice(0, 300) : JSON.stringify(parsed).slice(0, 300)}`);
+  const error = parsed && typeof parsed === "object" ? (parsed as { error?: unknown }).error : undefined;
+  if (!response.ok || error) {
+    const detail = typeof parsed === "string" ? parsed.slice(0, 300) : JSON.stringify(error ?? parsed).slice(0, 300);
+    const outcome = response.status >= 500 ? " The outcome is unknown; read the object before retrying." : "";
+    throw new Error(redact(`${context}: ${detail}${outcome}`));
   }
   return parsed;
 }
@@ -88,10 +101,11 @@ export function registerMetaWrites(c: Collector, config: Record<string, string>)
           graph(id),
           {
             method: "POST",
-            headers: { "content-type": "application/x-www-form-urlencoded" },
-            body: new URLSearchParams({ status: String(status), access_token: config.accessToken }),
+            headers: { "content-type": "application/x-www-form-urlencoded", authorization: `Bearer ${config.accessToken}` },
+            body: new URLSearchParams({ status: String(status) }),
           },
           `Meta ${target} status`,
+          config.accessToken,
         );
         return ok({ applied: true, action: nom, result: result });
       },
@@ -100,10 +114,6 @@ export function registerMetaWrites(c: Collector, config: Record<string, string>)
   statusTool("meta_update_campaign_status", "campaign", "campaignId");
   statusTool("meta_update_adset_status", "ad set", "adSetId");
   statusTool("meta_update_ad_status", "ad", "adId");
-
-
-
-
 
   const renameTool = (nom: string, target: "campaign" | "ad set" | "ad", param: string) =>
     c.tool(
@@ -123,10 +133,11 @@ export function registerMetaWrites(c: Collector, config: Record<string, string>)
           graph(id),
           {
             method: "POST",
-            headers: { "content-type": "application/x-www-form-urlencoded" },
-            body: new URLSearchParams({ name: String(name), access_token: config.accessToken }),
+            headers: { "content-type": "application/x-www-form-urlencoded", authorization: `Bearer ${config.accessToken}` },
+            body: new URLSearchParams({ name: String(name) }),
           },
           `Meta ${target} rename`,
+          config.accessToken,
         );
         return ok({ applied: true, action: nom, result });
       },
@@ -136,9 +147,29 @@ export function registerMetaWrites(c: Collector, config: Record<string, string>)
   renameTool("meta_rename_adset", "ad set", "adSetId");
   renameTool("meta_rename_ad", "ad", "adId");
 
-
-
-
+  c.tool(
+    "meta_rename_ad_account",
+    "Rename a Meta ad account. The name is the only thing that changes. Previews by default.",
+    {
+      adAccountId: z.string().describe("Ad account to rename (act_… or bare ID)."),
+      name: z.string().min(1).max(400).describe("New name. This is the only thing the call changes."),
+      confirm: confirmSchema,
+    },
+    async (a) => {
+      const account = `act_${String(a.adAccountId).replace(/^act_/, "")}`;
+      const { name, confirm } = a as Record<string, string | boolean>;
+      if (!confirm) return preview("meta_rename_ad_account", { target: account, newName: name });
+      const result = await request(
+        graph(account),
+        {
+          method: "POST",
+          headers: { "content-type": "application/x-www-form-urlencoded", authorization: `Bearer ${config.accessToken}` },
+          body: new URLSearchParams({ name: String(name) }),
+        },
+        "Meta ad account rename",
+        config.accessToken,
+      );
+      return ok({ applied: true, action: "meta_rename_ad_account", result });
+    },
+  );
 }
-
-// ────────────────────────────── TikTok ──────────────────────────────

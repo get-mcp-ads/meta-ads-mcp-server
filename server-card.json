@@ -1,8 +1,8 @@
 {
   "serverInfo": {
     "name": "@getmcpads/meta-ads-mcp-server",
-    "title": "Meta Ads MCP server: 41 read tools, 23 opt-in preview-first writes.",
-    "version": "2.0.1",
+    "title": "Meta Ads MCP server: 42 read tools, 24 opt-in preview-first writes.",
+    "version": "2.1.0",
     "websiteUrl": "https://www.getmcpads.com/tools/meta-ads",
     "icons": [
       {
@@ -15,7 +15,7 @@
     {
       "name": "meta_health_check",
       "title": "meta health check",
-      "description": "Agent-ready read-only health check: validates token metadata, lists accessible ad accounts, and warns about missing read scopes without exposing the access token.",
+      "description": "Read-only connection diagnostic: inspects token identity and granted permissions, and lists accessible ad accounts without exposing the access token. Unavailable checks remain unknown; granted scopes do not prove app access level or clearance of Meta security checkpoints.",
       "inputSchema": {
         "type": "object",
         "properties": {},
@@ -1748,7 +1748,7 @@
     {
       "name": "meta_get_insights",
       "title": "meta get insights",
-      "description": "Query Meta Ads performance insights. Supports 170+ metrics, 43+ breakdowns with intelligent query planning.\nUse meta://metrics resource to see available metrics. Use meta://breakdowns for available breakdowns.\nThe query planner automatically splits incompatible metric/breakdown combinations into multiple API requests and merges results.",
+      "description": "Query Meta Ads performance insights. Supports 170+ metrics, 43+ breakdowns with intelligent query planning.\nUse meta://metrics resource to see available metrics. Use meta://breakdowns for available breakdowns.\nThe query planner automatically splits incompatible metric/breakdown combinations into multiple API requests and merges results.\nFor purchases, leads or conversion analysis, request actions (and action_values for revenue) or explicit metrics such as purchases, omni_purchases or leads. The native conversions field is not a universal conversion total, and its absence does not mean purchases or leads are unavailable. Label the exact action_type and never sum overlapping purchase types.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1774,12 +1774,45 @@
             "minItems": 1,
             "description": "Metric keys from meta://metrics (e.g., impressions, spend, ctr)"
           },
+          "dimensions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "description": "Dimension keys listed in meta://compatibility. Entity metadata, such as names, statuses and budgets, is read at its current value."
+          },
+          "adsetIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^\\d+$"
+            },
+            "minItems": 1,
+            "maxItems": 100,
+            "description": "Restrict adset- or ad-level insights to these ad set IDs."
+          },
+          "effectiveStatus": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "PAUSED"
+            ],
+            "description": "Keep only entities with this native effective status at the selected level."
+          },
           "breakdowns": {
             "type": "array",
             "items": {
               "type": "string"
             },
             "description": "Breakdown keys from meta://breakdowns (e.g., age, gender, country)"
+          },
+          "actionBreakdowns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Native action breakdowns such as action_type. Only for action metrics."
           },
           "datePreset": {
             "type": "string",
@@ -1864,6 +1897,16 @@
             "maxItems": 100,
             "description": "Restrict ad-level insights to these ad IDs."
           },
+          "campaignIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^\\d+$"
+            },
+            "minItems": 1,
+            "maxItems": 100,
+            "description": "Restrict campaign-, adset- or ad-level insights to these campaign IDs."
+          },
           "attributionMode": {
             "type": "string",
             "enum": [
@@ -1903,7 +1946,7 @@
           "includeAccountTotals": {
             "type": "boolean",
             "default": false,
-            "description": "Also read native account-level totals with the same dates, metrics and attribution. Requires no adIds or breakdowns."
+            "description": "Also read native account-level totals with the same dates, metrics and attribution. Requires no entity filter, dimension or breakdown."
           },
           "limit": {
             "type": "integer",
@@ -2490,7 +2533,7 @@
     {
       "name": "meta_debug_token",
       "title": "meta debug token",
-      "description": "Check the current access token validity, expiration, and granted scopes. Useful for diagnosing auth issues.",
+      "description": "Inspect token identity, validity, expiry and scopes. When Meta refuses to inspect this token with itself, independently check the connecting user and granted permissions; token and app metadata then remain unknown.",
       "inputSchema": {
         "type": "object",
         "properties": {},
@@ -3779,7 +3822,9 @@
                 "instagram_user_id",
                 "url_tags",
                 "degrees_of_freedom_spec",
-                "is_adset_budget_sharing_enabled"
+                "is_adset_budget_sharing_enabled",
+                "applink_treatment",
+                "omnichannel_link_spec"
               ]
             },
             "minItems": 1,
@@ -3915,7 +3960,7 @@
     {
       "name": "meta_get_adset_configuration",
       "title": "meta get adset configuration",
-      "description": "Read an existing ad set, its parent campaign budget/objective and account currency before preparing an edit. Returns native settings; no mutation.",
+      "description": "Read an existing ad set, its parent campaign budget/objective and account currency before preparing an edit or adding ads. For a web and app (cross-channel) ad set, creativeRequirements gives the applink_treatment (and omnichannel_link_spec) used by its own ads. Returns native settings; no mutation.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3933,6 +3978,71 @@
         "required": [
           "adAccountId",
           "adSetId"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": true
+              },
+              {
+                "type": "array",
+                "items": {}
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "meta_get_promotable_apps",
+      "title": "meta get promotable apps",
+      "description": "List the apps this ad account can advertise, with their store URLs, to set up a website and app (cross-channel) ad set: promoted_object.omnichannel_object.app[] takes application_id and object_store_urls. Read-only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "adAccountId": {
+            "type": "string",
+            "pattern": "^(act_)?\\d+$",
+            "description": "Owning advertising account ID. Use the exact ID returned by account discovery; do not substitute a campaign or business ID."
+          }
+        },
+        "required": [
+          "adAccountId"
         ],
         "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
@@ -4523,7 +4633,8 @@
                 "description": "Complete Meta targeting spec: geography, demographics, custom audiences, exclusions, placements and targeting_automation. Updates replace the entire targeting spec."
               },
               "promoted_object": {
-                "$ref": "#/properties/configuration/properties/targeting"
+                "$ref": "#/properties/configuration/properties/targeting",
+                "description": "Native promoted object. Website and app (cross-channel) conversion: {omnichannel_object:{pixel:[{pixel_id,custom_event_type}],app:[{application_id,custom_event_type,object_store_urls:[...]}]}} with the same custom_event_type everywhere; app IDs and store URLs come from meta_get_promotable_apps. Ads in such an ad set need creative applink_treatment and pixel plus app tracking (meta_get_adset_configuration creativeRequirements)."
               },
               "destination_type": {
                 "type": "string"
@@ -4713,7 +4824,8 @@
                 "description": "Complete Meta targeting spec: geography, demographics, custom audiences, exclusions, placements and targeting_automation. Updates replace the entire targeting spec."
               },
               "promoted_object": {
-                "$ref": "#/properties/configuration/properties/targeting"
+                "$ref": "#/properties/configuration/properties/targeting",
+                "description": "Native promoted object. Website and app (cross-channel) conversion: {omnichannel_object:{pixel:[{pixel_id,custom_event_type}],app:[{application_id,custom_event_type,object_store_urls:[...]}]}} with the same custom_event_type everywhere; app IDs and store URLs come from meta_get_promotable_apps. Ads in such an ad set need creative applink_treatment and pixel plus app tracking (meta_get_adset_configuration creativeRequirements)."
               },
               "destination_type": {
                 "type": "string"
@@ -5022,6 +5134,83 @@
               },
               "template_url_spec": {
                 "$ref": "#/properties/spec/properties/object_story_spec"
+              },
+              "applink_treatment": {
+                "type": "string",
+                "enum": [
+                  "deeplink_with_web_fallback",
+                  "deeplink_with_appstore_fallback",
+                  "web_only",
+                  "automatic"
+                ],
+                "description": "Required when the ad set optimizes for website and app (promoted_object.omnichannel_object with app). Copy the value used by the ad set's existing ads (meta_get_adset_configuration creativeRequirements); deeplink_with_web_fallback opens the app when installed with a deep link, else the website. Advantage+ shopping campaigns do not support automatic."
+              },
+              "omnichannel_link_spec": {
+                "type": "object",
+                "properties": {
+                  "web": {
+                    "type": "object",
+                    "properties": {
+                      "url": {
+                        "type": "string",
+                        "format": "uri",
+                        "pattern": "^https\\:\\/\\/",
+                        "maxLength": 2000,
+                        "description": "Website URL. Must equal the creative link (object_story_spec link_data.link)."
+                      }
+                    },
+                    "required": [
+                      "url"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "app": {
+                    "type": "object",
+                    "properties": {
+                      "application_id": {
+                        "type": "string",
+                        "pattern": "^\\d+$",
+                        "description": "App ID promoted by the ad set (promoted_object.omnichannel_object.app[].application_id)."
+                      },
+                      "platform_specs": {
+                        "type": "object",
+                        "properties": {
+                          "android": {
+                            "type": "object",
+                            "properties": {
+                              "url": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 2000,
+                                "description": "App deep link opened on this platform."
+                              }
+                            },
+                            "required": [
+                              "url"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "ios": {
+                            "$ref": "#/properties/spec/properties/omnichannel_link_spec/properties/app/properties/platform_specs/properties/android"
+                          },
+                          "ipad": {
+                            "$ref": "#/properties/spec/properties/omnichannel_link_spec/properties/app/properties/platform_specs/properties/android"
+                          },
+                          "iphone": {
+                            "$ref": "#/properties/spec/properties/omnichannel_link_spec/properties/app/properties/platform_specs/properties/android"
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "application_id"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "additionalProperties": false,
+                "description": "Optional web and app destinations for a web and app ad: web.url equal to the creative link, app.application_id from the ad set promoted_object and per-platform deep links. Requires applink_treatment."
               }
             },
             "additionalProperties": false,
@@ -6413,6 +6602,81 @@
         },
         "required": [
           "adId",
+          "adAccountId",
+          "name"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": true
+              },
+              {
+                "type": "array",
+                "items": {}
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "meta_rename_ad_account",
+      "title": "meta rename ad account",
+      "description": "Rename a Meta ad account. The name is the only thing that changes. Previews by default.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "adAccountId": {
+            "type": "string",
+            "description": "Ad account to rename (act_… or bare ID)."
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400,
+            "description": "New name. This is the only thing the call changes."
+          },
+          "confirm": {
+            "type": "boolean",
+            "description": "Set to true to actually apply the change. Without it, the tool only previews."
+          }
+        },
+        "required": [
           "adAccountId",
           "name"
         ],

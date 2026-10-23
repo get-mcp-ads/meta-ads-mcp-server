@@ -414,6 +414,7 @@ export const DIMENSION_CATALOG: DimensionDefinition[] = [
     type: "enum",
     level: ["adset", "ad"],
     isIdentifier: false,
+    isInsightsField: false, // Ad set metadata, not an Insights field
     enumValues: [
       "LOWEST_COST_WITHOUT_CAP",
       "LOWEST_COST_WITH_BID_CAP",
@@ -1092,7 +1093,7 @@ export const DIMENSION_CATALOG: DimensionDefinition[] = [
     type: "enum",
     level: ["adset"],
     isIdentifier: false,
-    isInsightsField: false, // Requires Ad Set entity API, not Insights
+    isInsightsField: true, // Native Insights attribution setting
     enumValues: ["1d_click", "7d_click", "28d_click", "1d_view", "7d_view", "28d_view", "1d_ev", "default"],
   },
   {

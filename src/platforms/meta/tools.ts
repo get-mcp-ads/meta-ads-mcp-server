@@ -12,7 +12,8 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { MetaApiException, MetaClient } from "./client.js";
 import { validateQuerySelection } from "./compatibility-rules.js";
 import { planQueries, mergeResults } from "./query-planner.js";
-import { calculateDerivedMetrics } from "./calculated-metrics.js";
+import { calculateDerivedMetrics, calculateShareMetrics } from "./calculated-metrics.js";
+import { insightDimensionKeys, enrichMetaDimensions } from "./report-dimensions.js";
 import { formatMcpToolError } from "../../core/errors.js";
 import type { MetaConfig } from "../../config/types.js";
 import { registerMetaBroadReadTools } from "./broad-read.js";
@@ -846,24 +847,26 @@ export function registerMetaTools(server: McpServer, config: MetaConfig): void {
   // ── P0/P1. meta_health_check ──────────────────────────────────────
   server.tool(
     "meta_health_check",
-    "Agent-ready read-only health check: validates token metadata, lists accessible ad accounts, and warns about missing read scopes without exposing the access token.",
+    "Read-only connection diagnostic: inspects token identity and granted permissions, and lists accessible ad accounts without exposing the access token. Unavailable checks remain unknown; granted scopes do not prove app access level or clearance of Meta security checkpoints.",
     {},
     async () => {
       const warnings: MetaWarning[] = [];
-      let tokenValid = false;
-      let missingRequired: string[] = [];
-      let missingRecommended: string[] = [];
-      let grantedScopes: string[] = [];
-      let tokenCheck: Record<string, unknown> = { ok: false };
+      let tokenValid: boolean | null = null;
+      let grantedScopes: string[] | null = null;
+      let permissionSource: "debug_token" | "me_permissions" | null = null;
+      let tokenCheck: Record<string, unknown> = { ok: false, is_valid: null, status: "unavailable" };
+      let permissionsCheck: Record<string, unknown> = { ok: false, status: "unavailable", scopes: null };
+      let identityCheck: Record<string, unknown> = { ok: false, user_id: null, app_id: null };
       let adAccountCheck: Record<string, unknown> = { ok: false };
 
       try {
         const tokenInfo = await client.debugToken();
         tokenValid = tokenInfo.is_valid;
-        const scopes = Array.isArray(tokenInfo.scopes) ? tokenInfo.scopes : [];
-        grantedScopes = scopes;
-        missingRequired = REQUIRED_READ_SCOPES.filter((scope) => !scopes.includes(scope));
-        missingRecommended = RECOMMENDED_READ_SCOPES.filter((scope) => !scopes.includes(scope));
+        identityCheck = { ok: Boolean(tokenInfo.user_id), source: "debug_token", user_id: tokenInfo.user_id ?? null, app_id: tokenInfo.app_id ?? null };
+        if (Array.isArray(tokenInfo.scopes)) {
+          grantedScopes = tokenInfo.scopes;
+          permissionSource = "debug_token";
+        }
 
         if (!tokenInfo.is_valid) {
           warnings.push({
@@ -873,50 +876,61 @@ export function registerMetaTools(server: McpServer, config: MetaConfig): void {
           });
         }
 
-        if (missingRequired.length > 0) {
-          warnings.push({
-            area: "scopes",
-            message: `Missing required read scope(s): ${missingRequired.join(", ")}.`,
-            suggestion: "Grant ads_read for read-only ad account access.",
-          });
-        }
-
-        if (missingRecommended.length > 0) {
-          warnings.push({
-            area: "scopes",
-            message: `Missing recommended discovery scope(s): ${missingRecommended.join(", ")}.`,
-            suggestion:
-              "Grant the missing read-only scopes when you need business, page, Instagram, or pixel discovery.",
-          });
-        }
-
-        if (grantedScopes.includes("ads_management")) {
-          warnings.push({
-            area: "scopes",
-            message: "ads_management is present but this MCP implementation only performs read-only GET calls.",
-            suggestion: "Prefer a token without write scopes unless another system explicitly needs ads_management.",
-          });
-        }
-
         tokenCheck = {
           ok: true,
+          status: tokenInfo.is_valid ? "valid" : "invalid",
           is_valid: tokenInfo.is_valid,
           app_id: tokenInfo.app_id,
           user_id: tokenInfo.user_id,
+          type: tokenInfo.type,
           expires_at: tokenInfo.expires_at,
+          data_access_expires_at: tokenInfo.data_access_expires_at,
           expires_at_iso: tokenInfo.expires_at
             ? new Date(tokenInfo.expires_at * 1000).toISOString()
             : null,
           scopes: grantedScopes,
-          missing_required_scopes: missingRequired,
-          missing_recommended_scopes: missingRecommended,
         };
       } catch (error) {
         warnings.push(warningFromError(
           "token",
           error,
-          "Verify META_ACCESS_TOKEN, app mode, and that the token has not expired.",
+          "Meta inspects a token with itself only when its user develops or administers the app; System User tokens qualify. This failure alone does not establish token expiry or missing permissions.",
         ));
+      }
+
+      if (grantedScopes === null && tokenValid !== false) {
+        try {
+          grantedScopes = await client.getGrantedPermissions();
+          permissionSource = "me_permissions";
+        } catch (error) {
+          warnings.push(warningFromError("scopes", error,
+            "Granted permissions could not be verified. Do not treat an unavailable diagnostic as a missing grant."));
+        }
+      }
+      if (tokenValid === null) {
+        try {
+          const identity = await client.getCurrentUserIdentity();
+          identityCheck = { ok: true, source: "me", user_id: identity.id, name: identity.name, app_id: null };
+        } catch (error) {
+          warnings.push(warningFromError("identity", error,
+            "The connecting user could not be independently identified; app and token metadata remain unverified."));
+        }
+      }
+      const missingRequired = grantedScopes === null ? null : REQUIRED_READ_SCOPES.filter(scope => !grantedScopes.includes(scope));
+      const missingRecommended = grantedScopes === null ? null : RECOMMENDED_READ_SCOPES.filter(scope => !grantedScopes.includes(scope));
+      if (grantedScopes !== null) {
+        permissionsCheck = {
+          ok: true, status: "verified", source: permissionSource, scopes: grantedScopes,
+          missing_required_scopes: missingRequired, missing_recommended_scopes: missingRecommended,
+        };
+      }
+      if (missingRequired?.length) {
+        warnings.push({ area: "scopes", message: `Missing required read scope(s): ${missingRequired.join(", ")}.`,
+          suggestion: "Grant ads_read for ad account reporting." });
+      }
+      if (missingRecommended?.length) {
+        warnings.push({ area: "scopes", message: `Missing recommended discovery scope(s): ${missingRecommended.join(", ")}.`,
+          suggestion: "Grant the relevant permissions when you need business, page, Instagram, or pixel discovery." });
       }
 
       try {
@@ -945,33 +959,42 @@ export function registerMetaTools(server: McpServer, config: MetaConfig): void {
         ));
       }
 
-      const insightsOk = tokenValid && missingRequired.length === 0 && adAccountCheck.ok === true;
-      const discoveryOk = tokenValid && missingRecommended.length === 0;
+      const insightsOk = tokenValid !== false && missingRequired?.length === 0 && adAccountCheck.ok === true;
+      const discoveryOk = tokenValid !== false && missingRecommended?.length === 0;
+      const adsManagementGranted = grantedScopes === null ? null : grantedScopes.includes("ads_management");
+      const pagesManageAdsGranted = grantedScopes === null ? null : grantedScopes.includes("pages_manage_ads");
 
       return ok({
-        status: !tokenValid ? "error" : missingRequired.length > 0 || adAccountCheck.ok !== true ? "degraded" : "ok",
+        status: tokenValid === false ? "error" : tokenValid === null || !insightsOk ? "degraded" : "ok",
         apiVersion: client.apiVersion,
         capabilities: {
           insights: {
-            status: insightsOk ? "ok" : "degraded",
+            status: missingRequired === null ? "unknown" : insightsOk ? "ok" : "degraded",
             requiredScopes: [...REQUIRED_READ_SCOPES],
             missingRequiredScopes: missingRequired,
           },
           discovery: {
-            status: discoveryOk ? "ok" : "degraded",
+            status: missingRecommended === null ? "unknown" : discoveryOk ? "ok" : "degraded",
             recommendedScopes: [...RECOMMENDED_READ_SCOPES],
             missingRecommendedScopes: missingRecommended,
           },
           writeSurface: {
-            status: grantedScopes.includes("ads_management") ? "warning" : "ok",
-            adsManagementGranted: grantedScopes.includes("ads_management"),
-            note: grantedScopes.includes("ads_management")
-              ? "ads_management is granted but this MCP only performs read-only GET calls."
-              : "No write scope detected for this read-only MCP.",
+            status: adsManagementGranted === null ? "unknown" : adsManagementGranted && tokenValid !== false ? "ok" : "degraded",
+            writesEnabled: config.enableWrites === true,
+            adsManagementGranted,
+            pagesManageAdsGranted,
+            permissionSource,
+            appAccessLevel: "not_checked",
+            accountSecurityCheckpoint: "not_checked",
+            note: adsManagementGranted === null
+              ? "Write permissions are unknown because permission inspection was unavailable."
+              : "Verified scopes do not establish app access level, Page/account asset assignments, or clearance of Meta security checkpoints. Writes also require META_ENABLE_WRITES and a confirmed call.",
           },
         },
         checks: {
           token: tokenCheck,
+          identity: identityCheck,
+          permissions: permissionsCheck,
           ad_accounts: adAccountCheck,
         },
         warnings,
@@ -2649,32 +2672,52 @@ export function registerMetaTools(server: McpServer, config: MetaConfig): void {
     "meta_get_insights",
     `Query Meta Ads performance insights. Supports 170+ metrics, 43+ breakdowns with intelligent query planning.
 Use meta://metrics resource to see available metrics. Use meta://breakdowns for available breakdowns.
-The query planner automatically splits incompatible metric/breakdown combinations into multiple API requests and merges results.`,
+The query planner automatically splits incompatible metric/breakdown combinations into multiple API requests and merges results.
+For purchases, leads or conversion analysis, request actions (and action_values for revenue) or explicit metrics such as purchases, omni_purchases or leads. The native conversions field is not a universal conversion total, and its absence does not mean purchases or leads are unavailable. Label the exact action_type and never sum overlapping purchase types.`,
     {
       adAccountId: adAccountIdSchema,
       level: levelSchema.describe("Aggregation level: account, campaign, adset, or ad"),
       metrics: z.array(z.string()).min(1).describe("Metric keys from meta://metrics (e.g., impressions, spend, ctr)"),
+      dimensions: z.array(z.string()).max(100).optional().describe("Dimension keys listed in meta://compatibility. Entity metadata, such as names, statuses and budgets, is read at its current value."),
+      adsetIds: z.array(z.string().regex(/^\d+$/)).min(1).max(100).optional().describe("Restrict adset- or ad-level insights to these ad set IDs."),
+      effectiveStatus: z.enum(["ACTIVE", "PAUSED"]).optional().describe("Keep only entities with this native effective status at the selected level."),
       breakdowns: z.array(z.string()).optional().describe("Breakdown keys from meta://breakdowns (e.g., age, gender, country)"),
+      actionBreakdowns: z.array(z.string()).optional().describe("Native action breakdowns such as action_type. Only for action metrics."),
       datePreset: datePresetSchema.describe("Predefined date range (e.g., last_7d, last_30d)"),
       timeRange: timeRangeSchema.describe("Custom date range with since/until in YYYY-MM-DD format"),
       timeIncrement: z.union([z.literal(1), z.literal(7), z.literal(14), z.literal(28), z.literal(30), z.string()]).optional().describe("Time granularity: 1 (daily), 7 (weekly), 'monthly', or 'all_days'"),
       adIds: z.array(z.string().regex(/^\d+$/)).min(1).max(100).optional().describe("Restrict ad-level insights to these ad IDs."),
+      campaignIds: z.array(z.string().regex(/^\d+$/)).min(1).max(100).optional().describe("Restrict campaign-, adset- or ad-level insights to these campaign IDs."),
       attributionMode: z.enum(["account", "adset", "explicit"]).default("account").describe("Use Meta account settings, ad-set settings, or explicitly supplied windows. No setting is inferred from returned numbers."),
       attributionWindows: z.array(z.enum(["1d_click", "7d_click", "28d_click", "1d_view", "1d_ev"])).min(1).max(5).optional().describe("Only with attributionMode explicit. These windows are sent identically to every split query and account total."),
       actionReportTime: z.enum(["impression", "conversion", "mixed"]).default("impression").describe("Date basis for actions, sent explicitly to Meta."),
-      includeAccountTotals: z.boolean().default(false).describe("Also read native account-level totals with the same dates, metrics and attribution. Requires no adIds or breakdowns."),
+      includeAccountTotals: z.boolean().default(false).describe("Also read native account-level totals with the same dates, metrics and attribution. Requires no entity filter, dimension or breakdown."),
       limit: z.number().int().min(1).max(5000).optional().default(500),
     },
-    async ({ adAccountId, level, metrics, breakdowns, datePreset, timeRange, timeIncrement, adIds, limit, attributionMode = "account", attributionWindows, actionReportTime = "impression", includeAccountTotals = false }) => {
+    async ({ adAccountId, level, metrics, dimensions = [], breakdowns, actionBreakdowns, datePreset, timeRange, timeIncrement, adIds, adsetIds, campaignIds, effectiveStatus, limit, attributionMode = "account", attributionWindows, actionReportTime = "impression", includeAccountTotals = false }) => {
       try {
         const startTime = Date.now();
 
         // Plan the query
         if (adIds && level !== "ad") throw new Error("adIds requires level ad.");
+        if (campaignIds && (level === "account" || includeAccountTotals)) throw new Error("campaignIds requires an entity level without account totals.");
+        if (adsetIds && !["adset", "ad"].includes(level)) throw new Error("adsetIds requires adset or ad level.");
+        if (effectiveStatus && level === "account") throw new Error("effectiveStatus requires an entity level.");
+        // Native conversions is not a universal total: include the event arrays
+        // needed to distinguish absent fields from available purchases/leads.
+        const requestedMetrics = [...metrics];
+        const supportingMetrics = [
+          ...(metrics.includes("conversions") && !metrics.includes("actions") ? ["actions"] : []),
+          ...(metrics.includes("conversion_values") && !metrics.includes("action_values") ? ["action_values"] : []),
+        ];
+        metrics = [...metrics, ...supportingMetrics];
+        const insightDimensions = insightDimensionKeys(dimensions, level);
         const plan = planQueries({
           adAccountId,
           level,
           metrics,
+          dimensions: insightDimensions,
+          actionBreakdowns,
           breakdowns: breakdowns ?? [],
           datePreset: (datePreset ?? "last_30d") as import("./types.js").DatePreset,
           timeRange,
@@ -2691,14 +2734,20 @@ The query planner automatically splits incompatible metric/breakdown combination
           });
         }
 
-        if (includeAccountTotals && (adIds?.length || breakdowns?.length)) throw new Error("Native account totals require no ad ID filter or breakdowns; run a separate account-level query instead.");
+        if (includeAccountTotals && (adIds?.length || adsetIds?.length || effectiveStatus || dimensions.length || breakdowns?.length || actionBreakdowns?.length)) throw new Error("Native account totals require no entity filter, dimension or breakdown; run a separate account-level query instead.");
         const measurement = {attributionMode, attributionWindows: attributionWindows ? [...new Set(attributionWindows)] : undefined, actionReportTime};
         const sentMeasurement = measurementParams({...plan.requests[0], ...measurement});
         for(const request of plan.requests) Object.assign(request, measurement);
         // Execute all requests
         const allResults: Record<string, unknown>[][] = [];
         for (const request of plan.requests) {
-          const result = await client.fetchInsights(adAccountId, {...request, ...(adIds ? {filtering:[{field:"ad.id",operator:"IN",value:adIds}]} : {})});
+          const filtering = [
+            ...(adIds ? [{field:"ad.id",operator:"IN",value:adIds}] : []),
+            ...(adsetIds ? [{field:"adset.id",operator:"IN",value:adsetIds}] : []),
+            ...(campaignIds ? [{field:"campaign.id",operator:"IN",value:campaignIds}] : []),
+            ...(effectiveStatus ? [{field:`${level}.effective_status`,operator:"IN",value:[effectiveStatus]}] : []),
+          ];
+          const result = await client.fetchInsights(adAccountId, {...request, ...(filtering.length ? {filtering} : {})});
           allResults.push(result);
         }
 
@@ -2713,6 +2762,12 @@ The query planner automatically splits incompatible metric/breakdown combination
           }));
         }
 
+        if (metrics.some(key => key === "spendShare" || key === "purchaseValueShare")) {
+          if (breakdowns?.length || actionBreakdowns?.length) throw new Error("Share metrics require an unsegmented report to avoid double-counting totals.");
+          data = calculateShareMetrics(data as import("./types.js").InsightRow[]);
+        }
+
+        data = await enrichMetaDimensions(data, dimensions, level, formatAdAccountId(adAccountId), (path,params) => client.fetchUrl(graphUrl(client,path,params)));
         let accountTotals: Record<string, unknown>[] | null = null;
         let totalsRequestCount = 0;
         if(includeAccountTotals) {
@@ -2729,6 +2784,7 @@ The query planner automatically splits incompatible metric/breakdown combination
         const evidence=reportingEvidence(allResults,plan.requests,plan.joinKeys,data);
         return ok({
           data,
+          metric_selection: {requested: requestedMetrics, supporting_metrics_added: supportingMetrics},
           reporting_context: {ad_account_id:adAccountId,level,time_range:timeRange??null,date_preset:timeRange?null:(datePreset??"last_30d"),time_increment:timeIncrement??"all_days",attribution:{mode:attributionMode,requested_windows:attributionWindows??null,resolved_native_windows:null,parameters_sent:sentMeasurement},action_report_time:actionReportTime,ad_ids:adIds??null,breakdowns:breakdowns??[],pagination_exhausted:true},
           account_totals: accountTotals,
           evidence,
@@ -2960,14 +3016,29 @@ The query planner automatically splits incompatible metric/breakdown combination
   // ── 14. meta_debug_token ──────────────────────────────────────────
   server.tool(
     "meta_debug_token",
-    "Check the current access token validity, expiration, and granted scopes. Useful for diagnosing auth issues.",
+    "Inspect token identity, validity, expiry and scopes. When Meta refuses to inspect this token with itself, independently check the connecting user and granted permissions; token and app metadata then remain unknown.",
     {},
     async () => {
       try {
         const info = await client.debugToken();
         return ok(info);
       } catch (e) {
-        return formatMcpToolError(e);
+        const warnings = [warningFromError("token", e,
+          "Token metadata inspection is unavailable. This does not prove token expiry or missing permissions.")];
+        let identity: { id: string; name?: string } | null = null;
+        let scopes: string[] | null = null;
+        try { identity = await client.getCurrentUserIdentity(); }
+        catch (error) { warnings.push(warningFromError("identity", error, "Connecting user identity is unverified.")); }
+        try { scopes = await client.getGrantedPermissions(); }
+        catch (error) { warnings.push(warningFromError("scopes", error, "Granted permissions remain unknown.")); }
+        return ok({
+          status: identity || scopes !== null ? "partial" : "unavailable",
+          is_valid: null, app_id: null, expires_at: null,
+          user_id: identity?.id ?? null, user_name: identity?.name ?? null,
+          scopes, permissionSource: scopes === null ? null : "me_permissions",
+          appAccessLevel: "not_checked", accountSecurityCheckpoint: "not_checked",
+          warnings,
+        });
       }
     },
   );

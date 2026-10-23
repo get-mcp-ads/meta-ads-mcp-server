@@ -61,6 +61,7 @@ export function reportingEvidence(
     })),
     rows_without_spend: missingRows.length,
     notes: [
+      "The native conversions field is not a universal conversion total: missing conversions does not establish that purchases or leads are unavailable. Inspect actions and action_values, identify the exact action_type (for example offsite_conversion.fb_pixel_purchase for website purchases or omni_purchase for all-channel purchases), and keep missing values distinct from zero.",
       "Rows are merged from separate native queries; a missing field or missing query match is not proof of zero or of delivery outside the reporting period.",
       "Native attribution configuration is not inferred from numerical coincidences in action values. Explicit parameters are listed for each query.",
       "An action object may contain a window column without a value field. Preserve this absence; do not fill value from another window or label separate windows as a deduplicated combined total.",

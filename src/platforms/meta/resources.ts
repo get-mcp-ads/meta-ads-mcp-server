@@ -10,6 +10,7 @@ import { DIMENSION_CATALOG } from "./dimension-catalog.js";
 
 const READ_ONLY_TOOLS = [
   "meta_get_adset_configuration",
+  "meta_get_promotable_apps",
   "meta_get_catalog_batch_status",
   "meta_health_check",
   "meta_list_ad_accounts",

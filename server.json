@@ -2,8 +2,8 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "com.getmcpads/meta-ads",
   "title": "Meta Ads",
-  "description": "Meta Ads MCP server: 41 read tools, 23 opt-in preview-first writes.",
-  "version": "2.0.1",
+  "description": "Meta Ads MCP server: 42 read tools, 24 opt-in preview-first writes.",
+  "version": "2.1.0",
   "websiteUrl": "https://www.getmcpads.com/tools/meta-ads",
   "repository": {
     "url": "https://github.com/get-mcp-ads/meta-ads-mcp-server",
@@ -14,7 +14,7 @@
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@getmcpads/meta-ads-mcp-server",
-      "version": "2.0.1",
+      "version": "2.1.0",
       "transport": {
         "type": "stdio"
       },
@@ -27,7 +27,7 @@
         },
         {
           "name": "META_ENABLE_WRITES",
-          "description": "Set to 1 to expose 23 write tools. Default calls preview; confirm:true applies changes.",
+          "description": "Set to 1 to expose 24 write tools. Default calls preview; confirm:true applies changes.",
           "isRequired": false,
           "isSecret": false
         },
