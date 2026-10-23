@@ -10,7 +10,7 @@ Compare campaign performance, inspect delivery and prepare changes from your MCP
 [![CI](https://github.com/get-mcp-ads/meta-ads-mcp-server/actions/workflows/ci.yml/badge.svg)](https://github.com/get-mcp-ads/meta-ads-mcp-server/actions/workflows/ci.yml)
 [![Smithery](https://smithery.ai/badge/getmcpads/getmcpads-meta-ads)](https://smithery.ai/servers/getmcpads/getmcpads-meta-ads)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![Node](https://img.shields.io/badge/node-%E2%89%A522.12-brightgreen.svg)](package.json)
+[![Node](https://img.shields.io/badge/node-22.23.4%2B%20%7C%2024.22.1%2B%20%7C%2026.12.1%2B-brightgreen.svg)](package.json)
 
 [Watch the film](https://www.getmcpads.com/home/film/get-mcp-ads-brand-film-1080p.mp4) · [What's new](#whats-new) · [Install](#install-this-release) · [Tool reference](#tools) · [Try hosted getmcpads](https://www.getmcpads.com/tools/meta-ads?utm_source=github&utm_medium=readme&utm_campaign=meta-ads)
 
@@ -22,32 +22,34 @@ Compare campaign performance, inspect delivery and prepare changes from your MCP
 
 The film shows hosted getmcpads with sample data. Its MCP Apps, from creative galleries and alerts to Google Sheets exports and bulk launches, belong to the hosted product. This repository provides the standalone native API tools.
 
-**41 read tools** · **23 write tools**, disabled by default.
+**42 read tools** · **24 write tools**, disabled by default.
 
 Run locally with your own platform credentials and a client that supports stdio MCP, such as Claude Desktop, Claude Code or Cursor. Your requests go directly to the platform. For managed connections, including supported ChatGPT setups, use the hosted option.
 
 ## What's new
 
-**[v2.0.1: Native tools and security update](https://github.com/get-mcp-ads/meta-ads-mcp-server/releases/tag/v2.0.1) · September 20, 2026**
+**[v2.1.0: Gateway sync and runtime security update](https://github.com/get-mcp-ads/meta-ads-mcp-server/releases/tag/v2.1.0) · October 23, 2026**
 
-- Use account-scoped creative reads compatible with Graph v26, including bounded historical fallback and ownership verification.
-- Add exact entity configuration and uploaded-video readiness reads.
-- Update campaign creation, budget ownership, schedule validation and post-write verification.
-- Require Node.js 22.12 or newer and check Node 22/24 in CI.
-- Update vulnerable dependencies and regenerate the MCP catalog.
+- Add `meta_rename_ad_account` and `meta_get_promotable_apps`.
+- Accept website and app creatives, and return the creative requirements of a website and app ad set.
+- Add campaign, ad set, status and dimension filters to `meta_get_insights`, and keep missing revenue distinct from zero.
+- Report conclusive refusals and uncertain write outcomes separately. No write is retried.
+- Fall back to the user's identity and granted permissions when Meta refuses token inspection.
+- Require a Node.js release with the October 2026 security fixes, and warn on stderr when the runtime lacks them.
+- Update the MCP SDK to 1.32.1. CI audits runtime dependencies on Node 22, 24 and 26.
 
 [Full changelog](CHANGELOG.md) · [Source synchronization details](SOURCE_SYNC.md) · [All releases](https://github.com/get-mcp-ads/meta-ads-mcp-server/releases)
 
 ### Upgrade notes
 
-Requires **Node.js 22.12 or newer**. CI covers Node 22 and 24. Version 2.0.1 drops Node 18 and 20 support. Read the current tool schemas before reusing saved arguments. Writes remain optional and require explicit confirmation. Hosted creative integrations and MCP Apps UI are outside this release.
+Requires **Node.js 22.23.4 or newer on the 22 line, 24.22.1 or newer on the 24 line, or 26.12.1 or newer**. These releases carry the October 2026 security fixes. On an older runtime the server still starts and writes a warning to stderr. CI covers Node 22, 24 and 26. `meta_health_check` now reports a check it could not run as unknown, not as missing. Read the current tool schemas before reusing saved arguments. Writes remain optional and require explicit confirmation. Hosted creative integrations and MCP Apps UI are outside this release.
 
 ## Install this release
 
 This is a GitHub source release. npm and MCP Registry versions are published separately. The commands below select this exact version; unpinned `npx` examples later in this document select the version currently available on npm.
 
 ```bash
-git clone --branch v2.0.1 --depth 1 https://github.com/get-mcp-ads/meta-ads-mcp-server.git
+git clone --branch v2.1.0 --depth 1 https://github.com/get-mcp-ads/meta-ads-mcp-server.git
 cd meta-ads-mcp-server
 npm ci
 npm run build
@@ -61,8 +63,8 @@ Configure your MCP client to run `node` with the absolute path to `dist/cli.js` 
 
 | | |
 |---|---|
-| **41 read tools** | Campaigns, ad sets, ads, creatives, audiences, pixels, catalogs, Pages, Instagram, activity logs, A/B tests and lift studies |
-| **23 write tools** | Off by default. Status, budgets, schedules, renames, campaign creation. Each one **previews before it applies** |
+| **42 read tools** | Campaigns, ad sets, ads, creatives, audiences, pixels, catalogs, Pages, Instagram, activity logs, A/B tests and lift studies |
+| **24 write tools** | Off by default. Status, budgets, schedules, renames, campaign creation. Each one **previews before it applies** |
 | **190 metrics** | Including derived ones computed client-side (ROAS, CPA, frequency, hook rate, attribution-window views) |
 | **56 breakdowns · 90 dimensions** | With a compatibility matrix that catches invalid combinations *before* they hit the API |
 | **7 resources** | Live catalogues the model can read: metrics, breakdowns, compatibility rules, 11 workflow recipes |
@@ -179,7 +181,7 @@ npm start
 | Variable | Default | Meaning |
 |---|---|---|
 | `META_ACCESS_TOKEN` | none | **Required.** Your Meta access token |
-| `META_ENABLE_WRITES` | *unset* | Set to `1` to register the 23 write tools |
+| `META_ENABLE_WRITES` | *unset* | Set to `1` to register the 24 write tools |
 | `META_API_VERSION` | `v26.0` | Graph API version. Override to pin another |
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error` |
 
@@ -228,7 +230,7 @@ Two further guardrails:
 | `meta_update_campaign_status` / `_adset_status` / `_ad_status` | Pause or reactivate |
 | `meta_update_campaign_budget` / `_adset_budget` | Daily or lifetime budget |
 | `meta_update_adset_schedule` | Start and end time |
-| `meta_rename_campaign` / `_adset` / `_ad` | Name only |
+| `meta_rename_campaign` / `_adset` / `_ad` / `_ad_account` | Name only |
 | `meta_create_campaign` | Creates a campaign, always `PAUSED` |
 
 ---
@@ -238,11 +240,11 @@ Two further guardrails:
 Every tool is listed below. See [server-card.json](server-card.json) for complete parameter and output schemas.
 
 <details>
-<summary><b>41 read tools</b></summary>
+<summary><b>42 read tools</b></summary>
 
 | Tool | Purpose |
 | --- | --- |
-| `meta_health_check` | Agent-ready read-only health check: validates token metadata, lists accessible ad accounts, and warns about missing read scopes without exposing the access token. |
+| `meta_health_check` | Read-only connection diagnostic: inspects token identity and granted permissions, and lists accessible ad accounts without exposing the access token. |
 | `meta_get_business_assets` | Discover accessible Meta Business assets read-only: businesses, pages, Instagram accounts, pixels, and datasets when permissions allow. |
 | `meta_get_pages` | List accessible Facebook Pages with id, name, category, tasks, picture, and linked Instagram account references when available. |
 | `meta_get_instagram_accounts` | List Instagram accounts linked to accessible Pages, Business Manager assets, or an ad account when permissions allow. |
@@ -269,7 +271,7 @@ Every tool is listed below. See [server-card.json](server-card.json) for complet
 | `meta_get_study_results` | Get detailed results for a conversion lift or A/B test study. |
 | `meta_validate_query` | Validate a metric/breakdown combination BEFORE executing. |
 | `meta_get_page_posts` | Read published Facebook Page posts using a Page token resolved from the connected user. |
-| `meta_debug_token` | Check the current access token validity, expiration, and granted scopes. |
+| `meta_debug_token` | Inspect token identity, validity, expiry and scopes. |
 | `meta_search_entities` | Search campaigns, ad sets, or ads by name within an ad account. |
 | `meta_get_node_fields` | Read arbitrary flat fields from one Meta Graph node. |
 | `meta_list_edge_raw` | List an allowlisted read-only Meta Graph edge with caller-selected flat fields, filters, and cursor pagination. |
@@ -281,13 +283,14 @@ Every tool is listed below. See [server-card.json](server-card.json) for complet
 | `meta_get_video_sources` | Resolve fresh download URLs (source) and thumbnails for specific ad videos. |
 | `meta_get_entity_configuration` | Read a specific entity in its ad account for reconciliation. |
 | `meta_get_uploaded_video` | Check video processing and membership in the selected account library. |
-| `meta_get_adset_configuration` | Read an existing ad set, its parent campaign budget/objective and account currency before preparing an edit. |
+| `meta_get_adset_configuration` | Read an existing ad set, its parent campaign budget/objective and account currency before preparing an edit or adding ads. |
+| `meta_get_promotable_apps` | List the apps this ad account can advertise, with their store URLs, to set up a website and app (cross-channel) ad set. |
 | `meta_get_catalog_batch_status` | Read the completion and per-item errors for a catalog batch handle. |
 
 </details>
 
 <details>
-<summary><b>23 write tools</b></summary>
+<summary><b>24 write tools</b></summary>
 
 Disabled by default. Calls preview unless explicitly confirmed. Check the configuration and exact schema before use.
 
@@ -316,6 +319,7 @@ Disabled by default. Calls preview unless explicitly confirmed. Check the config
 | `meta_rename_campaign` | Rename a Meta campaign. |
 | `meta_rename_adset` | Rename a Meta ad set. |
 | `meta_rename_ad` | Rename a Meta ad. |
+| `meta_rename_ad_account` | Rename a Meta ad account. |
 
 </details>
 

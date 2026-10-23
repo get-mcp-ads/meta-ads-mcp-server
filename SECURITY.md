@@ -18,6 +18,7 @@ you ask us not to.
 
 | Version | Supported |
 | ------- | --------- |
+| 2.x     | ✅        |
 | 1.x     | ✅        |
 
 ## What this server does with your token

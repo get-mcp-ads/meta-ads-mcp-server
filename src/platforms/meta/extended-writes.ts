@@ -2,6 +2,7 @@
 import {z} from 'zod';
 import type {ToolShape} from '../../tool-quality.js';
 import {toMinorUnits} from '../../core/money.js';
+import {readBoundedJson} from '../../core/http.js';
 type Row=Record<string,any>;
 type Collector={tool:(name:string,description:string,shape:ToolShape,handler:(args:Row)=>Promise<unknown>)=>void};
 // Discover larger write schemas on demand; keep tools/list compact for every host.
@@ -52,7 +53,7 @@ const money={currency:currency.optional().describe('Required with any monetary a
 const adsetConfig=z.object({
  optimization_goal:z.string().min(1).optional(),billing_event:z.string().min(1).optional(),
  targeting:json.optional().describe('Complete Meta targeting spec: geography, demographics, custom audiences, exclusions, placements and targeting_automation. Updates replace the entire targeting spec.'),
- promoted_object:json.optional(),destination_type:z.string().optional(),
+ promoted_object:json.optional().describe('Native promoted object. Website and app (cross-channel) conversion: {omnichannel_object:{pixel:[{pixel_id,custom_event_type}],app:[{application_id,custom_event_type,object_store_urls:[...]}]}} with the same custom_event_type everywhere; app IDs and store URLs come from meta_get_promotable_apps. Ads in such an ad set need creative applink_treatment and pixel plus app tracking (meta_get_adset_configuration creativeRequirements).'),destination_type:z.string().optional(),
  bid_strategy:z.enum(['LOWEST_COST_WITHOUT_CAP','LOWEST_COST_WITH_BID_CAP','COST_CAP','LOWEST_COST_WITH_MIN_ROAS']).optional(),
  bid_constraints:json.optional(),start_time:date.optional(),end_time:date.optional(),
  attribution_spec:z.array(json).max(10).optional(),attribution_count_type:z.string().optional(),
@@ -61,13 +62,72 @@ const adsetConfig=z.object({
  adset_schedule:z.array(json).optional(),frequency_control_specs:z.array(json).optional(),
  optimization_sub_event:z.string().optional(),is_incremental_attribution_enabled:z.boolean().optional(),
 }).strict();
+/** Ad-level destination order for web and app (cross-channel) ad sets. Meta
+ * refuses an ad in such an ad set when its creative has none (subcode 2446455).
+ * Advantage+ shopping campaigns do not support `automatic`. */
+export const APPLINK_TREATMENTS=['deeplink_with_web_fallback','deeplink_with_appstore_fallback','web_only','automatic'] as const;
+const deepLink=z.object({url:z.string().trim().min(1).max(2000).describe('App deep link opened on this platform.')}).strict();
+export const omnichannelLinkSpec=z.object({
+ web:z.object({url:z.string().url().startsWith('https://').max(2000).describe('Website URL. Must equal the creative link (object_story_spec link_data.link).')}).strict().optional(),
+ app:z.object({
+  application_id:id.describe('App ID promoted by the ad set (promoted_object.omnichannel_object.app[].application_id).'),
+  platform_specs:z.object({android:deepLink.optional(),ios:deepLink.optional(),ipad:deepLink.optional(),iphone:deepLink.optional()}).strict().optional(),
+ }).strict().optional(),
+}).strict().refine(v=>Boolean(v.web||v.app),'omnichannel_link_spec needs web and/or app.')
+ .refine(v=>[v.app?.platform_specs?.ios,v.app?.platform_specs?.ipad,v.app?.platform_specs?.iphone].filter(Boolean).length<=1,'Use only one of ios, ipad or iphone in omnichannel_link_spec.app.platform_specs.');
 const creativeSpec=z.object({
  object_story_id:z.string().regex(/^\d+_\d+$/).optional(),object_story_spec:json.optional(),
  asset_feed_spec:json.optional(),instagram_user_id:id.optional(),product_set_id:id.optional(),
  degrees_of_freedom_spec:json.optional(),url_tags:z.string().max(4000).optional(),
  contextual_multi_ads:json.optional(),dynamic_ad_voice:z.string().optional(),
  image_crops:json.optional(),template_url:z.string().url().optional(),template_url_spec:json.optional(),
+ applink_treatment:z.enum(APPLINK_TREATMENTS).optional().describe('Required when the ad set optimizes for website and app (promoted_object.omnichannel_object with app). Copy the value used by the ad set\'s existing ads (meta_get_adset_configuration creativeRequirements); deeplink_with_web_fallback opens the app when installed with a deep link, else the website. Advantage+ shopping campaigns do not support automatic.'),
+ omnichannel_link_spec:omnichannelLinkSpec.optional().describe('Optional web and app destinations for a web and app ad: web.url equal to the creative link, app.application_id from the ad set promoted_object and per-platform deep links. Requires applink_treatment.'),
 }).strict();
+/** The creative's own website link, wherever the native spec carries it. */
+export function creativeLink(spec:Row):string|undefined{
+ const story=obj(spec.object_story_spec),link=obj(story.link_data).link??obj(obj(obj(story.video_data).call_to_action).value).link;
+ return typeof link==='string'?link:undefined;
+}
+/** Ad-level tracking that counts both website (pixel) and app events, as Meta
+ * documents it for web and app ads. IDs must match the ad set promoted_object. */
+export function webAndAppTrackingSpecs(pixelIds:string[],applicationIds:string[]):Row[]{
+ return [
+  ...(pixelIds.length?[{'action.type':['offsite_conversion'],fb_pixel:pixelIds}]:[]),
+  ...(applicationIds.length?[{'action.type':['mobile_app_install'],application:applicationIds},{'action.type':['app_custom_event'],application:applicationIds}]:[]),
+ ];
+}
+/** Pixel and app IDs of a web and app (omnichannel) promoted_object. */
+export function omnichannelIds(promoted:unknown):{pixelIds:string[];applicationIds:string[];events:string[]}{
+ const omni=obj(obj(promoted).omnichannel_object),list=(v:unknown)=>Array.isArray(v)?v.map(obj):[];
+ const pixels=list(omni.pixel),apps=list(omni.app);
+ return {pixelIds:pixels.map(p=>String(p.pixel_id??'')).filter(Boolean),applicationIds:apps.map(a=>String(a.application_id??'')).filter(Boolean),
+  events:[...pixels,...apps].map(e=>e.custom_event_type).filter((e):e is string=>typeof e==='string')};
+}
+/** Documented rules for a web and app ad set promoted_object. */
+export function validateOmnichannel(promoted:unknown):void{
+ const omni=obj(promoted).omnichannel_object;
+ if(omni===undefined)return;
+ const o=obj(omni),{pixelIds,applicationIds,events}=omnichannelIds(promoted);
+ for(const key of ['pixel','app'])if(o[key]!==undefined&&(!Array.isArray(o[key])||!o[key].length))throw new Error(`promoted_object.omnichannel_object.${key} must be a non-empty list.`);
+ if(Array.isArray(o.pixel)&&pixelIds.length!==o.pixel.length)throw new Error('Each omnichannel_object.pixel entry needs pixel_id.');
+ if(Array.isArray(o.app)){
+  if(applicationIds.length!==o.app.length)throw new Error('Each omnichannel_object.app entry needs application_id.');
+  for(const app of o.app as Row[])if(app.object_store_urls!==undefined&&(!Array.isArray(app.object_store_urls)||!app.object_store_urls.length||app.object_store_urls.some((u:unknown)=>typeof u!=='string'||!/^https?:\/\//.test(u))))throw new Error('omnichannel_object.app object_store_urls must list the store URLs of that app (see meta_get_promotable_apps).');
+ }
+ const count=(Array.isArray(o.pixel)?o.pixel.length:0)+(Array.isArray(o.app)?o.app.length:0);
+ if(events.length!==count)throw new Error('Each omnichannel_object entry needs custom_event_type.');
+ if(new Set(events).size>1)throw new Error('All custom_event_type values in omnichannel_object (app and pixel) must be the same event.');
+}
+export function validateCreativeDestination(spec:Row):void{
+ const omni=spec.omnichannel_link_spec as Row|undefined;
+ if(omni&&!spec.applink_treatment)throw new Error('omnichannel_link_spec requires applink_treatment in the same creative.');
+ const web=obj(omni?.web).url,link=creativeLink(spec);
+ if(typeof web==='string'&&link&&web!==link)throw new Error(`omnichannel_link_spec.web.url must equal the creative link (${link}).`);
+}
+/** Meta: "When creating cross channel optimization ads, applink_treatment is required in ad's creative". */
+export const CREATIVE_DESTINATION_SUBCODE=2446455;
+export const CREATIVE_DESTINATION_ACTION='This ad set optimizes for website and app (cross-channel), so the ad\'s creative must carry spec.applink_treatment. Read meta_get_adset_configuration for this adSetId: creativeRequirements.applinkTreatment gives the value used by the ad set\'s own ads (and omnichannelLinkSpec when they use deep links). A Meta creative cannot be edited: create a new creative with these fields, then create the ad with it.';
 const out=(data:unknown,isError=false)=>({...(isError?{isError:true}:{}),content:[{type:'text' as const,text:JSON.stringify(data,null,2)}]});
 const act=(v:string)=>v.replace(/^act_/,'');
 const obj=(v:unknown):Row=>v&&typeof v==='object'&&!Array.isArray(v)?v as Row:{};
@@ -111,6 +171,7 @@ export function buildAdsetPayload(a:Row,creating:boolean):Row {
  if(p.start_time&&p.end_time&&Date.parse(p.end_time)<=Date.parse(p.start_time))throw new Error('end_time must be after start_time.');
  if(creating&&p.lifetime_budget&&!p.end_time)throw new Error('A lifetime budget requires end_time.');
  const targeting=obj(p.targeting);
+ validateOmnichannel(p.promoted_object);
  if(obj(p.promoted_object).custom_conversion_id&&obj(p.promoted_object).pixel_id)throw new Error('For a custom conversion use custom_conversion_id without pixel_id. Meta resolves the pixel through the conversion.');
  if(p.targeting){
   for(const key of ['age_min','age_max'])if(has(targeting[key])&&(!Number.isInteger(targeting[key])||Number(targeting[key])<13||Number(targeting[key])>65))throw new Error(`${key} must be an integer from 13 to 65 (65 means 65+).`);
@@ -144,8 +205,21 @@ export function registerMetaExtendedWrites(c:Collector,config:Record<string,stri
   let response:Response;
   try{response=await fetch(`${base}/${path}${method==='GET'?'?'+query:''}`,{method,headers:method==='GET'||file?headers:{...headers,'content-type':'application/x-www-form-urlencoded'},...(method==='POST'?{body:upload??query}:{}),signal:AbortSignal.timeout(45000),redirect:"error"});}
   catch{throw Object.assign(new Error(method==='POST'?'Meta did not confirm the mutation. Check the account before retrying; a duplicate may otherwise be created.':'Meta could not be reached.'),{outcome:method==='POST'?'unknown':'not_applied'});}
-  let dataOut:Row;try{dataOut=await response.json() as Row;}catch{throw Object.assign(new Error('Meta returned an unreadable response. Check the object before retrying.'),{outcome:method==='POST'?'unknown':'not_applied'});}
-  if(!response.ok||dataOut.error){const e=obj(dataOut.error);throw Object.assign(new Error(String(e.error_user_msg||e.message||`Meta HTTP ${response.status}`).replaceAll(config.accessToken,'[redacted]').slice(0,700)),{code:e.code,subcode:e.error_subcode,outcome:'not_applied'});}
+  let dataOut:Row;try{const parsed:unknown=await readBoundedJson(response);if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))throw new Error('Invalid Graph response');dataOut=parsed as Row;}catch{throw Object.assign(new Error('Meta returned an unreadable response. Check the object before retrying.'),{httpStatus:response.status,outcome:method==='POST'?'unknown':'not_applied'});}
+  if(!response.ok||dataOut.error){
+   const e=obj(dataOut.error),code=typeof e.code==='number'?e.code:undefined,subcode=typeof e.error_subcode==='number'?e.error_subcode:undefined;
+   // Keep native trace evidence, but never infer that a server failure or an
+   // ambiguous/mixed receipt proves a mutation was rejected before application.
+   const clientRejection=response.status>=400&&response.status<500&&e.is_transient!==true;
+   const acknowledged=has(dataOut.id)||has(dataOut.copied_adset_id)||dataOut.success===true;
+   const checkpointRejected=method==='POST'&&clientRejection&&!acknowledged&&code===31&&subcode===3858385;
+   const trace=typeof e.fbtrace_id==='string'&&!e.fbtrace_id.includes(config.accessToken)&&/^[A-Za-z0-9_-]{1,200}$/.test(e.fbtrace_id)?e.fbtrace_id:undefined;
+   throw Object.assign(new Error(String(e.error_user_msg||e.message||`Meta HTTP ${response.status}`).replaceAll(config.accessToken,'[redacted]').slice(0,700)),{
+    code,subcode,httpStatus:response.status,fbtrace_id:trace,checkpointRejected,
+    creativeRequirementRejected:method==='POST'&&clientRejection&&!acknowledged&&subcode===CREATIVE_DESTINATION_SUBCODE,
+    outcome:method==='GET'||clientRejection&&!acknowledged?'not_applied':'unknown',
+   });
+  }
   return dataOut;
  }
  async function owned(nodeId:string,account:string,fields='id,account_id'):Promise<Row>{
@@ -162,7 +236,7 @@ export function registerMetaExtendedWrites(c:Collector,config:Record<string,stri
   const read=(n:string,d:string,shape:ToolShape,fn:(a:Row)=>Promise<unknown>)=>{const schema=z.object({adAccountId:accountId,...shape}).strict();c.tool(n,d,schema.shape,async raw=>{try{return out(await fn(schema.parse(raw)));}catch(e){return out({error:(e as Error).message},true);}});};
   read('meta_get_entity_configuration','Read a specific entity in its ad account for reconciliation. Read-only; never creates, changes or retries the entity. Missing or normalized fields must be inspected before claiming an exact match.',{
    entityId:id.describe('Exact entity ID saved in the acknowledged creation receipt.'),
-   fields:z.array(z.enum(['name','status','objective','daily_budget','lifetime_budget','special_ad_categories','special_ad_category_country','bid_strategy','campaign_id','optimization_goal','billing_event','targeting','promoted_object','bid_amount','bid_constraints','start_time','end_time','attribution_spec','destination_type','is_dynamic_creative','dsa_beneficiary','dsa_payor','adset_id','creative','tracking_specs','conversion_domain','object_story_spec','asset_feed_spec','object_story_id','instagram_actor_id','instagram_user_id','url_tags','degrees_of_freedom_spec','is_adset_budget_sharing_enabled'])).min(1).max(40).describe('Exact fields to re-read from the reviewed native creation payload. IDs and account ownership are always checked.'),
+   fields:z.array(z.enum(['name','status','objective','daily_budget','lifetime_budget','special_ad_categories','special_ad_category_country','bid_strategy','campaign_id','optimization_goal','billing_event','targeting','promoted_object','bid_amount','bid_constraints','start_time','end_time','attribution_spec','destination_type','is_dynamic_creative','dsa_beneficiary','dsa_payor','adset_id','creative','tracking_specs','conversion_domain','object_story_spec','asset_feed_spec','object_story_id','instagram_actor_id','instagram_user_id','url_tags','degrees_of_freedom_spec','is_adset_budget_sharing_enabled','applink_treatment','omnichannel_link_spec'])).min(1).max(40).describe('Exact fields to re-read from the reviewed native creation payload. IDs and account ownership are always checked.'),
   },async a=>({entity:await owned(a.entityId,a.adAccountId,['id','account_id',...a.fields].join(','))}));
   read('meta_get_uploaded_video','Check video processing and membership in the selected account library. If the first page misses the ID, use the video title to narrow the account-scoped lookup. A direct video read alone never proves membership or readiness. Bounded pagination; not_found is not success.',{videoId:id.describe('Exact uploaded video ID returned by Meta in this account.')},async a=>{
    let after:string|undefined,title:string|undefined;
@@ -177,11 +251,55 @@ export function registerMetaExtendedWrites(c:Collector,config:Record<string,stri
    }
    return {videoId:a.videoId,state:'not_found_in_recent_library',ready:false};
   });
-  read('meta_get_adset_configuration','Read an existing ad set, its parent campaign budget/objective and account currency before preparing an edit. Returns native settings; no mutation.',{adSetId:id},async a=>{
+  // Optional reads: a field this Graph version lacks must not break the ad set read.
+  async function optional(path:string,attempts:string[],extra:Row={}):Promise<Row|undefined>{
+   for(const fields of attempts){try{return await graph(path,'GET',{...extra,fields});}catch{/* try the next, shorter field list */}}
+   return undefined;
+  }
+  /** What a creative must carry to run in this ad set, read from the ad set and
+   * its own ads. Web and app ad sets need applink_treatment (Meta 2446455). */
+  async function destinationRequirements(adset:Row):Promise<Row|undefined>{
+   const omni=obj(obj(adset.promoted_object).omnichannel_object),apps=Array.isArray(omni.app)?omni.app.filter((a:unknown)=>obj(a).application_id):[];
+   const extra=await optional(String(adset.campaign_id),['id,smart_promotion_type,advantage_state_info','id,smart_promotion_type']);
+   const shopping=extra?extra.smart_promotion_type==='AUTOMATED_SHOPPING_ADS'||/SHOPPING|SALES/.test(String(obj(extra.advantage_state_info).advantage_state??'')):undefined;
+   const page=await optional(`${adset.id}/ads`,['id,name,effective_status,tracking_specs,creative{id,applink_treatment,object_story_spec,omnichannel_link_spec}','id,name,effective_status,tracking_specs,creative{id,applink_treatment,object_story_spec}','id,name,effective_status,creative{id,applink_treatment,object_story_spec}'],{limit:25});
+   const ads=(Array.isArray(page?.data)?page!.data:[]).map((ad:Row)=>({adId:String(ad.id),effectiveStatus:ad.effective_status,creativeId:obj(ad.creative).id?String(obj(ad.creative).id):undefined,
+    applinkTreatment:typeof obj(ad.creative).applink_treatment==='string'?obj(ad.creative).applink_treatment:undefined,
+    omnichannelLinkSpec:obj(ad.creative).omnichannel_link_spec&&typeof obj(ad.creative).omnichannel_link_spec==='object'?obj(ad.creative).omnichannel_link_spec:undefined,link:creativeLink(obj(ad.creative)),
+    trackingSpecs:Array.isArray(ad.tracking_specs)?ad.tracking_specs:undefined}));
+   const withValue=ads.filter((a:Row)=>APPLINK_TREATMENTS.includes(a.applinkTreatment));
+   if(!apps.length&&!withValue.length)return undefined;
+   // Prefer delivering ads, then the most frequent value among the ad set's own ads.
+   const pool=withValue.some((a:Row)=>a.effectiveStatus==='ACTIVE')?withValue.filter((a:Row)=>a.effectiveStatus==='ACTIVE'):withValue;
+   const counts=new Map<string,number>();for(const a of pool)counts.set(a.applinkTreatment,(counts.get(a.applinkTreatment)??0)+1);
+   const value=[...counts.entries()].sort((x,y)=>y[1]-x[1])[0]?.[0];
+   const reference=pool.find((a:Row)=>a.applinkTreatment===value);
+   const linked=pool.find((a:Row)=>a.omnichannelLinkSpec);
+   const ids=omnichannelIds(adset.promoted_object);
+   // Reference tracking must count both the pixel and the app; otherwise use the documented specs.
+   const covers=(specs:Row[])=>specs.some(t=>Array.isArray(t.fb_pixel)&&t.fb_pixel.length)&&specs.some(t=>Array.isArray(t.application)&&t.application.length);
+   const tracked=(ads.some((a:Row)=>a.effectiveStatus==='ACTIVE'&&a.trackingSpecs&&covers(a.trackingSpecs))?ads.filter((a:Row)=>a.effectiveStatus==='ACTIVE'):ads).find((a:Row)=>a.trackingSpecs&&covers(a.trackingSpecs));
+   const trackingSpecs=tracked?{value:tracked.trackingSpecs,source:'reference_ad',adId:tracked.adId}:ids.pixelIds.length&&ids.applicationIds.length?{value:webAndAppTrackingSpecs(ids.pixelIds,ids.applicationIds),source:'promoted_object'}:undefined;
+   return {crossChannel:apps.length>0,applicationIds:apps.map((a:Row)=>String(a.application_id)),pixelIds:ids.pixelIds,advantageShopping:shopping??'unknown',
+    ...(trackingSpecs?{trackingSpecs}:{}),
+    applinkTreatment:value&&reference?{value,source:'reference_ad',adId:reference.adId,creativeId:reference.creativeId}:{value:'deeplink_with_web_fallback',source:'default',note:'No ad in this ad set exposes applink_treatment. deeplink_with_web_fallback opens the app when it is installed and a deep link exists, otherwise the creative website link.'},
+    ...(linked?{omnichannelLinkSpec:{value:linked.omnichannelLinkSpec,adId:linked.adId,creativeId:linked.creativeId,link:linked.link}}:{}),
+    referenceAds:ads.slice(0,10),
+    note:'Every new creative used in this ad set must carry spec.applink_treatment'+(shopping===true?' (automatic is not supported by Advantage+ shopping campaigns)':'')+'. Copy omnichannel_link_spec only for the same website link, with web.url equal to the creative link. Give each ad trackingSpecs counting the pixel and the app (trackingSpecs).'};
+  }
+  read('meta_get_adset_configuration','Read an existing ad set, its parent campaign budget/objective and account currency before preparing an edit or adding ads. For a web and app (cross-channel) ad set, creativeRequirements gives the applink_treatment (and omnichannel_link_spec) used by its own ads. Returns native settings; no mutation.',{adSetId:id},async a=>{
    const adset=await owned(a.adSetId,a.adAccountId,'id,name,account_id,campaign_id,status,targeting,promoted_object,optimization_goal,billing_event,bid_strategy,bid_amount,bid_constraints,daily_budget,lifetime_budget,start_time,end_time,attribution_spec,destination_type,is_dynamic_creative,dsa_beneficiary,dsa_payor');
    const [info,campaign]=await Promise.all([account(a.adAccountId),owned(adset.campaign_id,a.adAccountId,'id,name,account_id,objective,status,daily_budget,lifetime_budget,special_ad_categories')]);
+   const creativeRequirements=await destinationRequirements(adset);
    return {account:info,campaign,adset,budgetLevel:Number(campaign.daily_budget)>0||Number(campaign.lifetime_budget)>0?'campaign':'adset',
+    ...(creativeRequirements?{creativeRequirements}:{}),
     note:'Native money fields are minor units. Targeting updates replace the complete spec. Duplicate an existing ad set to preserve complex settings.'};
+  });
+  read('meta_get_promotable_apps','List the apps this ad account can advertise, with their store URLs, to set up a website and app (cross-channel) ad set: promoted_object.omnichannel_object.app[] takes application_id and object_store_urls. Read-only.',{},async a=>{
+   const page=await optional(`act_${act(a.adAccountId)}/advertisable_applications`,['id,name,object_store_urls','id,name'],{limit:50});
+   const apps=(Array.isArray(page?.data)?page!.data:[]).map((app:Row)=>({applicationId:String(app.id),name:typeof app.name==='string'?app.name:undefined,
+    objectStoreUrls:[...new Set(Object.values(obj(app.object_store_urls)).filter((u):u is string=>typeof u==='string'&&/^https?:\/\//.test(u)))]}));
+   return {apps,...(page?{}:{note:'Meta did not return the advertisable apps of this account. Check that the app is linked to the ad account in Business settings.'})};
   });
   read('meta_get_catalog_batch_status','Read the completion and per-item errors for a catalog batch handle. Acceptance of a batch is not proof that every product succeeded.',{catalogId:id,handle:z.string().min(1).max(1000)},async a=>{await catalog(a.catalogId,a.adAccountId);return graph(`${a.catalogId}/check_batch_request_status`,'GET',{handle:a.handle,load_ids_of_invalid_requests:true});});
   return;
@@ -198,7 +316,10 @@ export function registerMetaExtendedWrites(c:Collector,config:Record<string,stri
     if(!a.confirm&&!a.validateOnly)return out({applied:false,action:n,adAccountId:`act_${act(a.adAccountId)}`,payload:p.redact??p.payload,validation:{local:true,meta:false,ownershipChecked:false},nextAction:'Review these exact parameters. Use validateOnly where supported, or repeat with confirm:true to apply.'});
     await p.scope?.();
     const result=await graph(p.path,'POST',{...p.payload,...(a.validateOnly?{execution_options:['validate_only']}: {})},p.file);
-    if(a.validateOnly)return out({applied:false,validatedByMeta:true,action:n,result});
+    if(a.validateOnly){
+     if(n==='meta_create_ad'&&(result.success!==true||has(result.id)||has(result.copied_adset_id)))return out({validatedByMeta:false,action:n,result,outcome:'unknown',retrySafe:false,error:'Meta did not return an unambiguous validation success. Inspect any returned object ID before retrying; this response does not authorize a new write.'},true);
+     return out({applied:false,validatedByMeta:true,action:n,result});
+    }
     let verification:unknown;
     if(p.readback){try{verification=await graph(result[p.idKey||'id']||p.path,'GET',{fields:p.readback});}catch{verification={confirmed:false,message:'Mutation returned success, but readback failed. Read the returned ID; do not recreate it.'};}}
     if(['meta_create_campaign','meta_create_adset','meta_create_ad'].includes(n)&&obj(verification).confirmed!==false){
@@ -216,7 +337,19 @@ export function registerMetaExtendedWrites(c:Collector,config:Record<string,stri
       note:'The submitted name and Meta readback differ. The cause is not established by this response; do not recreate the creative to force a match.'});
     }
     return out({applied:true,action:n,...(p.async?{processing:'accepted',message:'Accepted for asynchronous processing; this is not confirmation that every item or video is ready.'}:{}),result,verification,...(differences.length?{differences}:{})});
-   }catch(error){const e=error as Error&{code?:number;subcode?:number;outcome?:string};return out({error:e.message,code:e.code,subcode:e.subcode,outcome:e.outcome||'not_applied',retrySafe:false,...(e.subcode===1341012?{nextAction:'Meta refused access to the Page/profile used by this creative. Verify the selected Page, its asset assignments and the token permissions. Repeating the same request will not repair this access.'}:{})},true);}
+   }catch(error){
+    const e=error as Error&{code?:number;subcode?:number;outcome?:string;httpStatus?:number;fbtrace_id?:string;checkpointRejected?:boolean;creativeRequirementRejected?:boolean};
+    // A validation request or a failed ownership GET is not an attempted write.
+    // Only an exact, conclusive refusal of a confirmed ad creation is reported as rejected:
+    // a security checkpoint, or a creative without the web and app destination order
+    // (the creative itself cannot be edited; a new one is needed).
+    const rejected=n==='meta_create_ad'&&raw.confirm===true&&raw.validateOnly!==true&&(e.checkpointRejected===true||e.creativeRequirementRejected===true);
+    return out({error:e.message,code:e.code,subcode:e.subcode,httpStatus:e.httpStatus,fbtrace_id:e.fbtrace_id,outcome:e.outcome||'not_applied',retrySafe:false,
+     ...(rejected?{applied:false,outcome:'rejected'}:{}),
+     ...(e.subcode===CREATIVE_DESTINATION_SUBCODE?{missingCreativeFields:['applink_treatment'],nextAction:CREATIVE_DESTINATION_ACTION}:{}),
+     ...(e.code===31&&e.subcode===3858385?{nextAction:'Meta requires security authentication for this account. Check Ads Manager and Business Support Home with the connecting profile; if no authentication action is visible, contact Meta support with this fbtrace_id. Reconnecting alone does not prove the restriction is cleared.'}:e.subcode===1341012?{nextAction:'Meta refused access to the Page/profile used by this creative. Verify the selected Page, its asset assignments and the token permissions. Repeating the same request will not repair this access.'}:{}),
+    },true);
+   }
   });
  }
  const checkCurrency=async(a:Row)=>{const info=await account(a.adAccountId);if(a.currency&&info.currency!==a.currency)throw new Error(`Account currency is ${info.currency}, not ${a.currency}. Nothing was changed.`);};
@@ -271,6 +404,7 @@ export function registerMetaExtendedWrites(c:Collector,config:Record<string,stri
  register('meta_create_adcreative','Create an ad creative from an existing post or an explicit object_story_spec and optional asset_feed_spec. Supports image, video, carousel, collection and flexible specs. Does not launch an ad.',{name,spec:creativeSpec},a=>{
   const spec=creativeSpec.parse(a.spec);
   if(Number(!!spec.object_story_id)+Number(!!spec.object_story_spec)!==1)throw new Error('Supply exactly one of object_story_id or object_story_spec.');
+  validateCreativeDestination(spec);
   if(spec.object_story_spec&&!id.safeParse(spec.object_story_spec.page_id).success)throw new Error('object_story_spec requires an explicit numeric page_id.');
   return {path:`act_${act(a.adAccountId)}/adcreatives`,payload:{name:a.name,...spec},validate:true,scope:()=>account(a.adAccountId),readback:'id,name,account_id,object_story_id,effective_object_story_id,object_story_spec,asset_feed_spec,product_set_id'};
  });
@@ -309,7 +443,7 @@ export async function verifyMetaWriteScope(config:Record<string,string>,a:Row):P
  accountId.parse(a.adAccountId);
  const get=async(node:string,fields:string)=>{
   const response=await fetch(`https://graph.facebook.com/${config.apiVersion||'v26.0'}/${node}?fields=${encodeURIComponent(fields)}`,{headers:{authorization:`Bearer ${config.accessToken}`},signal:AbortSignal.timeout(30000),redirect:"error"});
-  const data=await response.json() as Row;if(!response.ok||data.error)throw new Error('Cannot verify the Meta target scope. Nothing was changed.');return data;
+  let data:Row;try{data=await readBoundedJson<Row>(response);}catch{throw new Error('Cannot verify the Meta target scope. Nothing was changed.');}if(!response.ok||!data||data.error)throw new Error('Cannot verify the Meta target scope. Nothing was changed.');return data;
  };
  const info=await get(`act_${act(a.adAccountId)}`,'id,currency');
  if(a.currency&&info.currency!==a.currency)throw new Error(`Account currency is ${info.currency}, not ${a.currency}. Nothing was changed.`);

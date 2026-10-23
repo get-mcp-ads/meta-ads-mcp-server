@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.1.0 - 2026-10-23
+
+- Add `meta_rename_ad_account` (write) and `meta_get_promotable_apps` (read), synchronized from getmcpads revision 3e1c2c8. The server exposes 42 read tools and 24 write tools.
+- Accept `applink_treatment` and `omnichannel_link_spec` on new creatives, validate website and app promoted objects, and return the creative requirements of a website and app ad set from `meta_get_adset_configuration`.
+- Add `campaignIds`, `adsetIds`, `effectiveStatus`, `dimensions` and `actionBreakdowns` to `meta_get_insights`. A request for `conversions` or `conversion_values` also reads the action arrays that carry purchases, leads and revenue, and the response lists the metrics it added.
+- Return quality rankings as text at ad level, keep missing revenue distinct from zero revenue, and compute website and app order values from their own purchase events.
+- Report a security checkpoint or a missing creative destination on a confirmed ad creation as a conclusive refusal. A server error, an ambiguous receipt or an unclear validation result is reported as an unknown outcome. No write is retried.
+- Fall back to `/me` and `/me/permissions` in `meta_health_check` and `meta_debug_token` when Meta refuses token inspection. A check that could not run is reported as unknown, not as a missing permission.
+- Send the access token in the Authorization header on every request, redact it from provider errors and logs, and stop reading a response after 25 MB.
+- Require Node.js 22.23.4 or newer on the 22 line, 24.22.1 or newer on the 24 line, or 26.12.1 or newer. An older runtime starts with a warning on stderr, and `npm run doctor` reports the same check.
+- Update `@modelcontextprotocol/sdk` to 1.32.1 and regenerate the lockfile. `npm audit --omit=dev` reports no vulnerabilities.
+- Run CI on Node 22, 24 and 26 every week and on every change, with a runtime dependency audit. Publish from version tags with `release.yml`, which replaces `publish-mcp.yml`.
+
 ## 2.0.1 - 2026-09-23
 
 - Restore public source hosting under the get-mcp-ads GitHub organization.

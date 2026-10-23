@@ -343,10 +343,13 @@ export function calculateDerivedMetrics(row: InsightRow): DerivedMetrics {
   const linkClicks = getActionValue(row.actions, ["link_click"]);
   const videoViews3s = getActionValue(row.actions, ["video_view"]);
 
-  // E-commerce funnel - Website (try omni_ first, then offsite_conversion)
+  // General funnel metrics prefer omni totals, with a website fallback.
   const addToCart = getActionValue(row.actions, ["omni_add_to_cart", "offsite_conversion.fb_pixel_add_to_cart"]);
   const purchases = getActionValue(row.actions, ["omni_purchase", "offsite_conversion.fb_pixel_purchase"]);
   const purchaseValue = getActionMonetaryValue(row.action_values, ["omni_purchase", "offsite_conversion.fb_pixel_purchase"]);
+  // Explicit website metrics must not fall back to purchases from other channels.
+  const websitePurchases = getActionValue(row.actions, "offsite_conversion.fb_pixel_purchase");
+  const websitePurchaseValue = getActionMonetaryValue(row.action_values, "offsite_conversion.fb_pixel_purchase");
   const viewContent = getActionValue(row.actions, ["omni_view_content", "offsite_conversion.fb_pixel_view_content"]);
   const initiateCheckout = getActionValue(row.actions, ["omni_initiated_checkout", "offsite_conversion.fb_pixel_initiate_checkout"]);
 
@@ -368,6 +371,7 @@ export function calculateDerivedMetrics(row: InsightRow): DerivedMetrics {
   // App metrics
   const appInstalls = getActionValue(row.actions, ["omni_app_install", "mobile_app_install"]);
   const appPurchases = getActionValue(row.actions, ["app_custom_event.fb_mobile_purchase"]);
+  const appPurchaseValue = getActionMonetaryValue(row.action_values, "app_custom_event.fb_mobile_purchase");
   const appTrials = getActionValue(row.actions, ["app_custom_event.fb_mobile_start_trial"]);
   const appRegistrations = getActionValue(row.actions, ["app_custom_event.fb_mobile_complete_registration"]);
   const achievements = getActionValue(row.actions, ["app_custom_event.fb_mobile_achievement_unlocked"]);
@@ -417,7 +421,8 @@ export function calculateDerivedMetrics(row: InsightRow): DerivedMetrics {
     // Video creative metrics
     hookRate: impressions > 0 ? (videoViews3s / impressions) * 100 : undefined,
     thumbstopRate: impressions > 0 ? (videoPlays / impressions) * 100 : undefined,
-    holdRate: video_p25 > 0 ? (video_p50 / video_p25) * 100 : undefined,
+    // Match the published catalog definition and its requested dependencies.
+    holdRate: impressions > 0 ? (thruPlay / impressions) * 100 : undefined,
     completionRate: video_p25 > 0 ? (video_p100 / video_p25) * 100 : undefined,
 
     // E-commerce funnel metrics
@@ -455,8 +460,8 @@ export function calculateDerivedMetrics(row: InsightRow): DerivedMetrics {
     outboundCtr: impressions > 0 ? (outboundClicks / impressions) * 100 : undefined,
 
     // ROAS variants
-    subscriptionRoas: spend > 0 && subscriptionValue > 0 ? subscriptionValue / spend : undefined,
-    leadsRoas: spend > 0 && leadsValue > 0 ? leadsValue / spend : undefined,
+    subscriptionRoas: spend > 0 && Array.isArray(row.action_values) ? subscriptionValue / spend : undefined,
+    leadsRoas: spend > 0 && Array.isArray(row.action_values) ? leadsValue / spend : undefined,
 
     // Per 1,000 impressions metrics
     purchasesPerMille: impressions > 0 ? (purchases / impressions) * 1000 : undefined,
@@ -498,7 +503,7 @@ export function calculateDerivedMetrics(row: InsightRow): DerivedMetrics {
     dropOffP75ToP95: video_p75 > 0 ? (1 - video_p95 / video_p75) * 100 : undefined,
     dropOffP75ToP100: video_p75 > 0 ? (1 - video_p100 / video_p75) * 100 : undefined,
     dropOffP95ToP100: video_p95 > 0 ? (1 - video_p100 / video_p95) * 100 : undefined,
-    sustainRate: impressions > 0 ? (thruPlay / impressions) * 100 : undefined,
+    sustainRate: video_p25 > 0 ? (video_p95 / video_p25) * 100 : undefined,
 
     // Click quality & funnel metrics
     clickQuality: clicks > 0 ? (purchases / clicks) * 100 : undefined,
@@ -515,7 +520,7 @@ export function calculateDerivedMetrics(row: InsightRow): DerivedMetrics {
     clickToFindLocationRatio: linkClicks > 0 ? (findLocations / linkClicks) * 100 : undefined,
     clickToAppointmentsRatio: linkClicks > 0 ? (appointments / linkClicks) * 100 : undefined,
     clickToInitiateCheckoutRatio: linkClicks > 0 ? (initiateCheckout / linkClicks) * 100 : undefined,
-    clickToWebsitePurchaseRatio: linkClicks > 0 ? (purchases / linkClicks) * 100 : undefined,
+    clickToWebsitePurchaseRatio: linkClicks > 0 ? (websitePurchases / linkClicks) * 100 : undefined,
 
     // App funnel metrics
     installToTrialRate: appInstalls > 0 ? (appTrials / appInstalls) * 100 : undefined,
@@ -530,8 +535,9 @@ export function calculateDerivedMetrics(row: InsightRow): DerivedMetrics {
     checkoutToPurchaseRatio: initiateCheckout > 0 ? (purchases / initiateCheckout) * 100 : undefined,
 
     // AOV variants
-    aovWebsite: purchases > 0 ? purchaseValue / purchases : undefined, // Same as aov for website
+    aovWebsite: websitePurchases > 0 ? websitePurchaseValue / websitePurchases : undefined,
     aovShop: shopPurchases > 0 ? shopPurchaseValue / shopPurchases : undefined,
+    aovApp: appPurchases > 0 ? appPurchaseValue / appPurchases : undefined,
   };
 }
 

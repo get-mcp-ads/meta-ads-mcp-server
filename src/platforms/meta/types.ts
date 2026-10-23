@@ -136,6 +136,7 @@ export type MetricCategory =
 export type MetricType = "native" | "calculated";
 
 export type MetricFormat =
+  | "string"
   | "number"
   | "currency"
   | "percentage"
@@ -644,6 +645,7 @@ export interface DerivedMetrics {
   // AOV variants
   aovWebsite?: number;
   aovShop?: number;
+  aovApp?: number;
 
   // Cost per action metrics (calculated as spend / count)
   cost_per_page_like?: number;

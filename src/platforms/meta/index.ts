@@ -15,10 +15,10 @@ export function registerMeta(server: McpServer, config: MetaConfig): void {
   registerMetaTools(server, config);
   registerMetaExtendedWrites(server as never, config as never, true);
   registerMetaResources(server, config.enableWrites ?? false);
-  logger.info("meta", "Registered 41 read tools and 7 resources");
+  logger.info("meta", "Registered 42 read tools and 7 resources");
 
   if (config.enableWrites) {
     registerMetaWrites(server as never, config as never);
-    logger.info("meta", "Registered 23 write tools (every one previews before it applies)");
+    logger.info("meta", "Registered 24 write tools (every one previews before it applies)");
   }
 }
