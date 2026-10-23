@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 // ============================================
-// META MARKETING API TYPES FOR BENLY REPORTS
+// META MARKETING API TYPES FOR REPORTS
 // ============================================
 
 // --- Configuration ---

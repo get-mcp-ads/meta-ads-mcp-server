@@ -417,7 +417,7 @@ export function calculateDerivedMetrics(row: InsightRow): DerivedMetrics {
   const shares = getActionValue(row.actions, "post");
 
   return {
-    // ===== ORIGINAL BENLY METRICS =====
+    // ===== ORIGINAL METRICS =====
     // Video creative metrics
     hookRate: impressions > 0 ? (videoViews3s / impressions) * 100 : undefined,
     thumbstopRate: impressions > 0 ? (videoPlays / impressions) * 100 : undefined,
