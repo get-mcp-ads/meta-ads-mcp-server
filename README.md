@@ -29,23 +29,18 @@ Run locally with your own platform credentials and a client that supports stdio 
 ## What's new
 
 <!-- release-history:start -->
-**[v2.1.0: Gateway sync and runtime security update](https://github.com/get-mcp-ads/meta-ads-mcp-server/releases/tag/v2.1.0) · October 23, 2026**
+**[v2.1.1: Zod 4 security update](https://github.com/get-mcp-ads/meta-ads-mcp-server/releases/tag/v2.1.1) · October 26, 2026**
 
-- Add `meta_rename_ad_account` (write) and `meta_get_promotable_apps` (read), synchronized from getmcpads revision 3e1c2c8. The server exposes 42 read tools and 24 write tools.
-- Accept `applink_treatment` and `omnichannel_link_spec` on new creatives, validate website and app promoted objects, and return the creative requirements of a website and app ad set from `meta_get_adset_configuration`.
-- Add `campaignIds`, `adsetIds`, `effectiveStatus`, `dimensions` and `actionBreakdowns` to `meta_get_insights`. A request for `conversions` or `conversion_values` also reads the action arrays that carry purchases, leads and revenue, and the response lists the metrics it added.
-- Return quality rankings as text at ad level, keep missing revenue distinct from zero revenue, and compute website and app order values from their own purchase events.
-- Report a security checkpoint or a missing creative destination on a confirmed ad creation as a conclusive refusal. A server error, an ambiguous receipt or an unclear validation result is reported as an unknown outcome. No write is retried.
-- Fall back to `/me` and `/me/permissions` in `meta_health_check` and `meta_debug_token` when Meta refuses token inspection. A check that could not run is reported as unknown, not as a missing permission.
-- Send the access token in the Authorization header on every request, redact it from provider errors and logs, and stop reading a response after 25 MB.
-- Require Node.js 22.23.4 or newer on the 22 line, 24.22.1 or newer on the 24 line, or 26.12.1 or newer. An older runtime starts with a warning on stderr, and `npm run doctor` reports the same check.
-- Update `@modelcontextprotocol/sdk` to 1.32.1 and regenerate the lockfile. `npm audit --omit=dev` reports no vulnerabilities.
-- Run CI on Node 22, 24 and 26 every week and on every change, with a runtime dependency audit. Publish from version tags with `release.yml`, which replaces `publish-mcp.yml`.
+- Update `zod` to 4.6.7. Every Zod release before 4.6.6 is covered by the high-severity advisory GHSA-mrhx-c7xc-m3w5: validating an oversized constrained collection can exhaust memory, and no Zod 3 release carries the fix. `npm audit --omit=dev` reports no vulnerability again.
+- Keep the Zod 3 validation behaviour. A parameter default is still validated and completed before use, so an omitted object must still supply its required fields.
+- Keep each parameter's own description when the parameter is optional or has a default. Zod 4 stores a description on the wrapped schema only, so the shared fallback description could otherwise replace it.
+- Tool names, parameters and descriptions published over MCP are unchanged. `server-card.json` is regenerated with Zod 4's JSON Schema output, which spells some constraints differently.
 
 **Earlier releases**
 
 | Version | Date | Highlights |
 | --- | --- | --- |
+| 2.1.0 | October 23, 2026 | Gateway sync and runtime security update |
 | 2.0.1 | September 23, 2026 | Public repository restored |
 | 2.0.0 | September 20, 2026 | Gateway sync and security fixes |
 | 1.1.0 | September 13, 2026 | Platform capability sync and quality contracts |
@@ -67,7 +62,7 @@ Requires **Node.js 22.23.4 or newer on the 22 line, 24.22.1 or newer on the 24 l
 This is a GitHub source release. npm and MCP Registry versions are published separately. The commands below select this exact version; unpinned `npx` examples later in this document select the version currently available on npm.
 
 ```bash
-git clone --branch v2.1.0 --depth 1 https://github.com/get-mcp-ads/meta-ads-mcp-server.git
+git clone --branch v2.1.1 --depth 1 https://github.com/get-mcp-ads/meta-ads-mcp-server.git
 cd meta-ads-mcp-server
 npm ci
 npm run build

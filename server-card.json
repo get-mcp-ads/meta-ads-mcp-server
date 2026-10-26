@@ -2,7 +2,7 @@
   "serverInfo": {
     "name": "@getmcpads/meta-ads-mcp-server",
     "title": "Meta Ads MCP server: 42 read tools, 24 opt-in preview-first writes.",
-    "version": "2.1.0",
+    "version": "2.1.1",
     "websiteUrl": "https://www.getmcpads.com/tools/meta-ads",
     "icons": [
       {
@@ -29,7 +29,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -54,8 +54,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -75,40 +75,42 @@
         "type": "object",
         "properties": {
           "businessId": {
-            "type": "string",
-            "description": "Business Manager ID. With adAccountId, discover only its owning Business; otherwise list /me/businesses when this is omitted."
+            "description": "Business Manager ID. With adAccountId, discover only its owning Business; otherwise list /me/businesses when this is omitted.",
+            "type": "string"
           },
           "adAccountId": {
-            "type": "string",
-            "description": "Optional ad account ID to discover its owner Business and assigned pixels; datasets are read from that Business when permitted."
+            "description": "Optional ad account ID to discover its owner Business and assigned pixels; datasets are read from that Business when permitted.",
+            "type": "string"
           },
           "limit": {
+            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results.",
+            "default": 100,
             "type": "integer",
             "minimum": 1,
-            "maximum": 500,
-            "default": 100,
-            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results."
+            "maximum": 500
           },
           "cursor": {
-            "type": "string",
-            "description": "Legacy cursor for /me/businesses only. Use cursors for asset edges."
+            "description": "Legacy cursor for /me/businesses only. Use cursors for asset edges.",
+            "type": "string"
           },
           "cursors": {
+            "description": "Per-edge cursors from paging/nextActions. Never reuse a cursor for another edge.",
             "type": "object",
-            "additionalProperties": {
+            "propertyNames": {
               "type": "string"
             },
-            "description": "Per-edge cursors from paging/nextActions. Never reuse a cursor for another edge."
+            "additionalProperties": {
+              "type": "string"
+            }
           },
           "maxPages": {
+            "description": "Maximum pages per edge; remaining pages are reported explicitly.",
+            "default": 3,
             "type": "integer",
             "minimum": 1,
-            "maximum": 5,
-            "default": 3,
-            "description": "Maximum pages per edge; remaining pages are reported explicitly."
+            "maximum": 5
           }
         },
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -119,7 +121,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -144,8 +146,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -165,22 +167,21 @@
         "type": "object",
         "properties": {
           "businessId": {
-            "type": "string",
-            "description": "Optional Business Manager ID to list owned/client pages. Omit to use /me/accounts."
+            "description": "Optional Business Manager ID to list owned/client pages. Omit to use /me/accounts.",
+            "type": "string"
           },
           "limit": {
+            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results.",
+            "default": 100,
             "type": "integer",
             "minimum": 1,
-            "maximum": 200,
-            "default": 100,
-            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results."
+            "maximum": 200
           },
           "cursor": {
-            "type": "string",
-            "description": "Pagination cursor from previous response"
+            "description": "Pagination cursor from previous response",
+            "type": "string"
           }
         },
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -191,7 +192,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -216,8 +217,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -237,30 +238,29 @@
         "type": "object",
         "properties": {
           "adAccountId": {
-            "type": "string",
-            "description": "Optional ad account ID for /instagram_accounts."
+            "description": "Optional ad account ID for /instagram_accounts.",
+            "type": "string"
           },
           "businessId": {
-            "type": "string",
-            "description": "Optional Business Manager ID for owned/client Instagram account edges."
+            "description": "Optional Business Manager ID for owned/client Instagram account edges.",
+            "type": "string"
           },
           "pageId": {
-            "type": "string",
-            "description": "Optional Page ID to read linked instagram_business_account/connected_instagram_account."
+            "description": "Optional Page ID to read linked instagram_business_account/connected_instagram_account.",
+            "type": "string"
           },
           "limit": {
+            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results.",
+            "default": 100,
             "type": "integer",
             "minimum": 1,
-            "maximum": 200,
-            "default": 100,
-            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results."
+            "maximum": 200
           },
           "cursor": {
-            "type": "string",
-            "description": "Pagination cursor from previous response"
+            "description": "Pagination cursor from previous response",
+            "type": "string"
           }
         },
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -271,7 +271,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -296,8 +296,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -317,31 +317,30 @@
         "type": "object",
         "properties": {
           "adAccountId": {
-            "type": "string",
-            "description": "Ad account ID for /adspixels and offline conversion datasets."
+            "description": "Ad account ID for /adspixels and offline conversion datasets.",
+            "type": "string"
           },
           "businessId": {
-            "type": "string",
-            "description": "Business Manager ID for owned/client pixels and datasets."
+            "description": "Business Manager ID for owned/client pixels and datasets.",
+            "type": "string"
           },
           "includeDatasets": {
-            "type": "boolean",
+            "description": "Also attempt dataset/offline conversion dataset edges.",
             "default": true,
-            "description": "Also attempt dataset/offline conversion dataset edges."
+            "type": "boolean"
           },
           "limit": {
+            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results.",
+            "default": 100,
             "type": "integer",
             "minimum": 1,
-            "maximum": 200,
-            "default": 100,
-            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results."
+            "maximum": 200
           },
           "cursor": {
-            "type": "string",
-            "description": "Pagination cursor from previous response"
+            "description": "Pagination cursor from previous response",
+            "type": "string"
           }
         },
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -352,7 +351,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -377,8 +376,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -402,29 +401,28 @@
             "description": "Ad account ID (e.g., act_123456789)"
           },
           "since": {
-            "type": "string",
-            "description": "Optional start time accepted by Graph API, usually YYYY-MM-DD or Unix seconds."
+            "description": "Optional start time accepted by Graph API, usually YYYY-MM-DD or Unix seconds.",
+            "type": "string"
           },
           "until": {
-            "type": "string",
-            "description": "Optional end time accepted by Graph API, usually YYYY-MM-DD or Unix seconds."
+            "description": "Optional end time accepted by Graph API, usually YYYY-MM-DD or Unix seconds.",
+            "type": "string"
           },
           "limit": {
+            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results.",
+            "default": 100,
             "type": "integer",
             "minimum": 1,
-            "maximum": 500,
-            "default": 100,
-            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results."
+            "maximum": 500
           },
           "cursor": {
-            "type": "string",
-            "description": "Pagination cursor from previous response"
+            "description": "Pagination cursor from previous response",
+            "type": "string"
           }
         },
         "required": [
           "adAccountId"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -435,7 +433,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -460,8 +458,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -485,24 +483,25 @@
             "description": "Ad account ID (e.g., act_123456789)"
           },
           "level": {
+            "description": "Entity or aggregation level for the requested report.",
+            "default": "all",
             "type": "string",
             "enum": [
               "campaign",
               "adset",
               "ad",
               "all"
-            ],
-            "default": "all",
-            "description": "Entity or aggregation level for the requested report."
+            ]
           },
           "effectiveStatusFilter": {
+            "description": "Optional effective_status filter values such as ACTIVE, PAUSED, WITH_ISSUES, DISAPPROVED.",
             "type": "array",
             "items": {
               "type": "string"
-            },
-            "description": "Optional effective_status filter values such as ACTIVE, PAUSED, WITH_ISSUES, DISAPPROVED."
+            }
           },
           "datePreset": {
+            "description": "Insights date preset for simple delivery metrics. Defaults to last_7d.",
             "type": "string",
             "enum": [
               "today",
@@ -525,10 +524,10 @@
               "this_week_mon_today",
               "this_week_sun_today",
               "this_year"
-            ],
-            "description": "Insights date preset for simple delivery metrics. Defaults to last_7d."
+            ]
           },
           "timeRange": {
+            "description": "Optional custom insights date range.",
             "type": "object",
             "properties": {
               "since": {
@@ -543,26 +542,23 @@
             "required": [
               "since",
               "until"
-            ],
-            "additionalProperties": false,
-            "description": "Optional custom insights date range."
+            ]
           },
           "limit": {
+            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results.",
+            "default": 100,
             "type": "integer",
             "minimum": 1,
-            "maximum": 200,
-            "default": 100,
-            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results."
+            "maximum": 200
           },
           "cursor": {
-            "type": "string",
-            "description": "Pagination cursor from previous response"
+            "description": "Pagination cursor from previous response",
+            "type": "string"
           }
         },
         "required": [
           "adAccountId"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -573,7 +569,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -598,8 +594,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -619,36 +615,35 @@
         "type": "object",
         "properties": {
           "adAccountId": {
-            "type": "string",
-            "description": "Ad account ID. Used when adIds/creativeIds are omitted."
+            "description": "Ad account ID. Used when adIds/creativeIds are omitted.",
+            "type": "string"
           },
           "adIds": {
+            "description": "Specific ad IDs to enrich.",
             "type": "array",
             "items": {
               "type": "string"
-            },
-            "description": "Specific ad IDs to enrich."
+            }
           },
           "creativeIds": {
+            "description": "Specific creative IDs to enrich.",
             "type": "array",
             "items": {
               "type": "string"
-            },
-            "description": "Specific creative IDs to enrich."
+            }
           },
           "limit": {
+            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results.",
+            "default": 100,
             "type": "integer",
             "minimum": 1,
-            "maximum": 500,
-            "default": 100,
-            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results."
+            "maximum": 500
           },
           "cursor": {
-            "type": "string",
-            "description": "Pagination cursor from previous response"
+            "description": "Pagination cursor from previous response",
+            "type": "string"
           }
         },
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -659,7 +654,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -684,8 +679,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -705,40 +700,39 @@
         "type": "object",
         "properties": {
           "adAccountId": {
-            "type": "string",
-            "description": "Ad account ID used when listing audiences."
+            "description": "Ad account ID used when listing audiences.",
+            "type": "string"
           },
           "audienceIds": {
+            "description": "Specific audience IDs to fetch via batch IDs lookup.",
             "type": "array",
             "items": {
               "type": "string"
-            },
-            "description": "Specific audience IDs to fetch via batch IDs lookup."
+            }
           },
           "type": {
+            "description": "Provider object or operation type selected from this schema's allowed values.",
+            "default": "all",
             "type": "string",
             "enum": [
               "all",
               "custom",
               "saved",
               "lookalike"
-            ],
-            "default": "all",
-            "description": "Provider object or operation type selected from this schema's allowed values."
+            ]
           },
           "limit": {
+            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results.",
+            "default": 100,
             "type": "integer",
             "minimum": 1,
-            "maximum": 500,
-            "default": 100,
-            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results."
+            "maximum": 500
           },
           "cursor": {
-            "type": "string",
-            "description": "Pagination cursor from previous response"
+            "description": "Pagination cursor from previous response",
+            "type": "string"
           }
         },
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -749,7 +743,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -774,8 +768,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -795,48 +789,47 @@
         "type": "object",
         "properties": {
           "businessId": {
-            "type": "string",
-            "description": "Business Manager ID used to discover owned/client product catalogs."
+            "description": "Business Manager ID used to discover owned/client product catalogs.",
+            "type": "string"
           },
           "catalogId": {
-            "type": "string",
-            "description": "Product Catalog ID to read directly."
+            "description": "Product Catalog ID to read directly.",
+            "type": "string"
           },
           "productIds": {
+            "description": "Specific Product Item IDs to fetch via the batch IDs endpoint.",
+            "maxItems": 100,
             "type": "array",
             "items": {
               "type": "string"
-            },
-            "maxItems": 100,
-            "description": "Specific Product Item IDs to fetch via the batch IDs endpoint."
+            }
           },
           "search": {
-            "type": "string",
-            "description": "Client-side substring filter across product id, retailer_id, name, brand, category, type, and custom labels."
+            "description": "Client-side substring filter across product id, retailer_id, name, brand, category, type, and custom labels.",
+            "type": "string"
           },
           "includeProducts": {
-            "type": "boolean",
+            "description": "Fetch product items for discovered/provided catalogs.",
             "default": true,
-            "description": "Fetch product items for discovered/provided catalogs."
+            "type": "boolean"
           },
           "includeProductSets": {
-            "type": "boolean",
+            "description": "Also attempt product_sets edges for catalog context.",
             "default": false,
-            "description": "Also attempt product_sets edges for catalog context."
+            "type": "boolean"
           },
           "limit": {
+            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results.",
+            "default": 100,
             "type": "integer",
             "minimum": 1,
-            "maximum": 500,
-            "default": 100,
-            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results."
+            "maximum": 500
           },
           "cursor": {
-            "type": "string",
-            "description": "Pagination cursor from previous response"
+            "description": "Pagination cursor from previous response",
+            "type": "string"
           }
         },
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -847,7 +840,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -872,8 +865,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -897,10 +890,12 @@
             "description": "Ad account ID (e.g., act_123456789)"
           },
           "catalogId": {
-            "type": "string",
-            "description": "Product Catalog ID used to load product metadata for joins."
+            "description": "Product Catalog ID used to load product metadata for joins.",
+            "type": "string"
           },
           "productBreakdown": {
+            "description": "Native product grouping used to join catalog items with reported insights.",
+            "default": "product_id",
             "type": "string",
             "enum": [
               "product_id",
@@ -913,16 +908,10 @@
               "product_custom_label_3_breakdown",
               "product_custom_label_4_breakdown",
               "product_group_content_id_breakdown"
-            ],
-            "default": "product_id",
-            "description": "Native product grouping used to join catalog items with reported insights."
+            ]
           },
           "metrics": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "minItems": 1,
+            "description": "Native or documented calculated metric names to request. Check compatibility with the selected dimensions.",
             "default": [
               "impressions",
               "clicks",
@@ -930,20 +919,25 @@
               "actions",
               "action_values"
             ],
-            "description": "Native or documented calculated metric names to request. Check compatibility with the selected dimensions."
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "level": {
+            "description": "Entity or aggregation level for the requested report.",
+            "default": "ad",
             "type": "string",
             "enum": [
               "account",
               "campaign",
               "adset",
               "ad"
-            ],
-            "default": "ad",
-            "description": "Entity or aggregation level for the requested report."
+            ]
           },
           "datePreset": {
+            "description": "Insights date preset. Defaults to last_30d.",
             "type": "string",
             "enum": [
               "today",
@@ -966,10 +960,10 @@
               "this_week_mon_today",
               "this_week_sun_today",
               "this_year"
-            ],
-            "description": "Insights date preset. Defaults to last_30d."
+            ]
           },
           "timeRange": {
+            "description": "Optional custom insights date range.",
             "type": "object",
             "properties": {
               "since": {
@@ -984,29 +978,26 @@
             "required": [
               "since",
               "until"
-            ],
-            "additionalProperties": false,
-            "description": "Optional custom insights date range."
+            ]
           },
           "limit": {
+            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results.",
+            "default": 500,
             "type": "integer",
             "minimum": 1,
-            "maximum": 1000,
-            "default": 500,
-            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results."
+            "maximum": 1000
           },
           "catalogProductLimit": {
+            "description": "Maximum catalog product records read for the join.",
+            "default": 500,
             "type": "integer",
             "minimum": 1,
-            "maximum": 1000,
-            "default": 500,
-            "description": "Maximum catalog product records read for the join."
+            "maximum": 1000
           }
         },
         "required": [
           "adAccountId"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -1017,7 +1008,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -1042,8 +1033,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -1067,48 +1058,47 @@
             "description": "Ad account ID (e.g., act_123456789)"
           },
           "businessId": {
-            "type": "string",
-            "description": "Optional Business Manager ID for block-list discovery."
+            "description": "Optional Business Manager ID for block-list discovery.",
+            "type": "string"
           },
           "adsetIds": {
+            "description": "Specific ad set IDs to inspect. If omitted, reads ad sets from the ad account.",
+            "maxItems": 100,
             "type": "array",
             "items": {
               "type": "string"
-            },
-            "maxItems": 100,
-            "description": "Specific ad set IDs to inspect. If omitted, reads ad sets from the ad account."
+            }
           },
           "includeAdsets": {
-            "type": "boolean",
+            "description": "Include ad set configuration when checking brand safety.",
             "default": true,
-            "description": "Include ad set configuration when checking brand safety."
+            "type": "boolean"
           },
           "includeBlockLists": {
-            "type": "boolean",
+            "description": "Include accessible brand-safety block-list metadata.",
             "default": true,
-            "description": "Include accessible brand-safety block-list metadata."
+            "type": "boolean"
           },
           "includeRawTargeting": {
-            "type": "boolean",
+            "description": "Include the native targeting specification for diagnostics.",
             "default": false,
-            "description": "Include the native targeting specification for diagnostics."
+            "type": "boolean"
           },
           "limit": {
+            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results.",
+            "default": 100,
             "type": "integer",
             "minimum": 1,
-            "maximum": 500,
-            "default": 100,
-            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results."
+            "maximum": 500
           },
           "cursor": {
-            "type": "string",
-            "description": "Pagination cursor from previous response"
+            "description": "Pagination cursor from previous response",
+            "type": "string"
           }
         },
         "required": [
           "adAccountId"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -1119,7 +1109,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -1144,8 +1134,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -1165,37 +1155,36 @@
         "type": "object",
         "properties": {
           "studyId": {
-            "type": "string",
-            "description": "Specific Ad Study ID to interpret."
+            "description": "Specific Ad Study ID to interpret.",
+            "type": "string"
           },
           "adAccountId": {
-            "type": "string",
-            "description": "Ad account ID used to discover ad_studies when studyId is omitted."
+            "description": "Ad account ID used to discover ad_studies when studyId is omitted.",
+            "type": "string"
           },
           "includeCellEntities": {
-            "type": "boolean",
+            "description": "Also read campaigns/adsets/adaccounts attached to each study cell.",
             "default": false,
-            "description": "Also read campaigns/adsets/adaccounts attached to each study cell."
+            "type": "boolean"
           },
           "cellEntityType": {
+            "description": "Entity type represented by experiment cells.",
+            "default": "campaigns",
             "type": "string",
             "enum": [
               "campaigns",
               "adsets",
               "adaccounts"
-            ],
-            "default": "campaigns",
-            "description": "Entity type represented by experiment cells."
+            ]
           },
           "limit": {
+            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results.",
+            "default": 50,
             "type": "integer",
             "minimum": 1,
-            "maximum": 100,
-            "default": 50,
-            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results."
+            "maximum": 100
           }
         },
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -1206,7 +1195,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -1231,8 +1220,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -1252,65 +1241,64 @@
         "type": "object",
         "properties": {
           "pageId": {
-            "type": "string",
-            "description": "Facebook Page ID for /posts and linked IG discovery."
+            "description": "Facebook Page ID for /posts and linked IG discovery.",
+            "type": "string"
           },
           "instagramAccountId": {
-            "type": "string",
-            "description": "Instagram professional account ID for /media."
+            "description": "Instagram professional account ID for /media.",
+            "type": "string"
           },
           "postIds": {
+            "description": "Specific Facebook post IDs to enrich.",
+            "maxItems": 50,
             "type": "array",
             "items": {
               "type": "string"
-            },
-            "maxItems": 50,
-            "description": "Specific Facebook post IDs to enrich."
+            }
           },
           "mediaIds": {
+            "description": "Specific Instagram media IDs to enrich.",
+            "maxItems": 50,
             "type": "array",
             "items": {
               "type": "string"
-            },
-            "maxItems": 50,
-            "description": "Specific Instagram media IDs to enrich."
+            }
           },
           "includePagePosts": {
-            "type": "boolean",
+            "description": "Read related Facebook Page posts when the token has permission.",
             "default": true,
-            "description": "Read related Facebook Page posts when the token has permission."
+            "type": "boolean"
           },
           "includeInstagramMedia": {
-            "type": "boolean",
+            "description": "Read related Instagram media when the token has permission.",
             "default": true,
-            "description": "Read related Instagram media when the token has permission."
+            "type": "boolean"
           },
           "includeInsights": {
-            "type": "boolean",
+            "description": "Include available insight metrics; additional provider permissions may be required.",
             "default": false,
-            "description": "Include available insight metrics; additional provider permissions may be required."
+            "type": "boolean"
           },
           "limit": {
+            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results.",
+            "default": 25,
             "type": "integer",
             "minimum": 1,
-            "maximum": 100,
-            "default": 25,
-            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results."
+            "maximum": 100
           },
           "cursor": {
-            "type": "string",
-            "description": "Pagination cursor from previous response"
+            "description": "Pagination cursor from previous response",
+            "type": "string"
           },
           "since": {
-            "type": "string",
-            "description": "Optional Graph time filter. For IG media this should be Unix seconds or strtotime-compatible text."
+            "description": "Optional Graph time filter. For IG media this should be Unix seconds or strtotime-compatible text.",
+            "type": "string"
           },
           "until": {
-            "type": "string",
-            "description": "Optional Graph time filter. For IG media this should be Unix seconds or strtotime-compatible text."
+            "description": "Optional Graph time filter. For IG media this should be Unix seconds or strtotime-compatible text.",
+            "type": "string"
           }
         },
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -1321,7 +1309,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -1346,8 +1334,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -1376,7 +1364,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -1401,8 +1389,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -1429,7 +1417,6 @@
         "required": [
           "adAccountId"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -1440,7 +1427,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -1465,8 +1452,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -1490,31 +1477,30 @@
             "description": "Ad account ID (e.g., act_123456789)"
           },
           "statusFilter": {
+            "description": "Filter by native effective_status, not configured status. PAUSED excludes IN_PROCESS, CAMPAIGN_PAUSED and ADSET_PAUSED. Omit for post-creation verification and inspect both returned status fields.",
             "type": "string",
             "enum": [
               "ACTIVE",
               "PAUSED",
               "DELETED",
               "ARCHIVED"
-            ],
-            "description": "Filter by native effective_status, not configured status. PAUSED excludes IN_PROCESS, CAMPAIGN_PAUSED and ADSET_PAUSED. Omit for post-creation verification and inspect both returned status fields."
+            ]
           },
           "limit": {
+            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results.",
+            "default": 100,
             "type": "integer",
             "minimum": 1,
-            "maximum": 500,
-            "default": 100,
-            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results."
+            "maximum": 500
           },
           "cursor": {
-            "type": "string",
-            "description": "Pagination cursor from previous response"
+            "description": "Pagination cursor from previous response",
+            "type": "string"
           }
         },
         "required": [
           "adAccountId"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -1525,7 +1511,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -1550,8 +1536,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -1575,35 +1561,34 @@
             "description": "Ad account ID (e.g., act_123456789)"
           },
           "campaignId": {
-            "type": "string",
-            "description": "Filter by campaign ID"
+            "description": "Filter by campaign ID",
+            "type": "string"
           },
           "statusFilter": {
+            "description": "Filter by native effective_status, not configured status. PAUSED excludes IN_PROCESS, CAMPAIGN_PAUSED and ADSET_PAUSED. Omit for post-creation verification and inspect both returned status fields.",
             "type": "string",
             "enum": [
               "ACTIVE",
               "PAUSED",
               "DELETED",
               "ARCHIVED"
-            ],
-            "description": "Filter by native effective_status, not configured status. PAUSED excludes IN_PROCESS, CAMPAIGN_PAUSED and ADSET_PAUSED. Omit for post-creation verification and inspect both returned status fields."
+            ]
           },
           "limit": {
+            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results.",
+            "default": 100,
             "type": "integer",
             "minimum": 1,
-            "maximum": 500,
-            "default": 100,
-            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results."
+            "maximum": 500
           },
           "cursor": {
-            "type": "string",
-            "description": "Pagination cursor from previous response"
+            "description": "Pagination cursor from previous response",
+            "type": "string"
           }
         },
         "required": [
           "adAccountId"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -1614,7 +1599,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -1639,8 +1624,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -1664,39 +1649,38 @@
             "description": "Ad account ID (e.g., act_123456789)"
           },
           "adsetId": {
-            "type": "string",
-            "description": "Filter by ad set ID; adSetId is also accepted."
+            "description": "Filter by ad set ID; adSetId is also accepted.",
+            "type": "string"
           },
           "adSetId": {
-            "type": "string",
-            "description": "Alias for adsetId. If both are supplied, they must match."
+            "description": "Alias for adsetId. If both are supplied, they must match.",
+            "type": "string"
           },
           "statusFilter": {
+            "description": "Filter by native effective_status, not configured status. PAUSED excludes IN_PROCESS, CAMPAIGN_PAUSED and ADSET_PAUSED. Omit for post-creation verification and inspect both returned status fields.",
             "type": "string",
             "enum": [
               "ACTIVE",
               "PAUSED",
               "DELETED",
               "ARCHIVED"
-            ],
-            "description": "Filter by native effective_status, not configured status. PAUSED excludes IN_PROCESS, CAMPAIGN_PAUSED and ADSET_PAUSED. Omit for post-creation verification and inspect both returned status fields."
+            ]
           },
           "limit": {
+            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results.",
+            "default": 100,
             "type": "integer",
             "minimum": 1,
-            "maximum": 500,
-            "default": 100,
-            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results."
+            "maximum": 500
           },
           "cursor": {
-            "type": "string",
-            "description": "Pagination cursor from previous response"
+            "description": "Pagination cursor from previous response",
+            "type": "string"
           }
         },
         "required": [
           "adAccountId"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -1707,7 +1691,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -1732,8 +1716,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -1767,54 +1751,55 @@
             "description": "Aggregation level: account, campaign, adset, or ad"
           },
           "metrics": {
+            "minItems": 1,
             "type": "array",
             "items": {
               "type": "string"
             },
-            "minItems": 1,
             "description": "Metric keys from meta://metrics (e.g., impressions, spend, ctr)"
           },
           "dimensions": {
+            "description": "Dimension keys listed in meta://compatibility. Entity metadata, such as names, statuses and budgets, is read at its current value.",
+            "maxItems": 100,
             "type": "array",
             "items": {
               "type": "string"
-            },
-            "maxItems": 100,
-            "description": "Dimension keys listed in meta://compatibility. Entity metadata, such as names, statuses and budgets, is read at its current value."
+            }
           },
           "adsetIds": {
+            "description": "Restrict adset- or ad-level insights to these ad set IDs.",
+            "minItems": 1,
+            "maxItems": 100,
             "type": "array",
             "items": {
               "type": "string",
               "pattern": "^\\d+$"
-            },
-            "minItems": 1,
-            "maxItems": 100,
-            "description": "Restrict adset- or ad-level insights to these ad set IDs."
+            }
           },
           "effectiveStatus": {
+            "description": "Keep only entities with this native effective status at the selected level.",
             "type": "string",
             "enum": [
               "ACTIVE",
               "PAUSED"
-            ],
-            "description": "Keep only entities with this native effective status at the selected level."
+            ]
           },
           "breakdowns": {
+            "description": "Breakdown keys from meta://breakdowns (e.g., age, gender, country)",
             "type": "array",
             "items": {
               "type": "string"
-            },
-            "description": "Breakdown keys from meta://breakdowns (e.g., age, gender, country)"
+            }
           },
           "actionBreakdowns": {
+            "description": "Native action breakdowns such as action_type. Only for action metrics.",
             "type": "array",
             "items": {
               "type": "string"
-            },
-            "description": "Native action breakdowns such as action_type. Only for action metrics."
+            }
           },
           "datePreset": {
+            "description": "Predefined date range (e.g., last_7d, last_30d)",
             "type": "string",
             "enum": [
               "today",
@@ -1837,10 +1822,10 @@
               "this_week_mon_today",
               "this_week_sun_today",
               "this_year"
-            ],
-            "description": "Predefined date range (e.g., last_7d, last_30d)"
+            ]
           },
           "timeRange": {
+            "description": "Custom date range with since/until in YYYY-MM-DD format",
             "type": "object",
             "properties": {
               "since": {
@@ -1855,11 +1840,10 @@
             "required": [
               "since",
               "until"
-            ],
-            "additionalProperties": false,
-            "description": "Custom date range with since/until in YYYY-MM-DD format"
+            ]
           },
           "timeIncrement": {
+            "description": "Time granularity: 1 (daily), 7 (weekly), 'monthly', or 'all_days'",
             "anyOf": [
               {
                 "type": "number",
@@ -1884,40 +1868,42 @@
               {
                 "type": "string"
               }
-            ],
-            "description": "Time granularity: 1 (daily), 7 (weekly), 'monthly', or 'all_days'"
+            ]
           },
           "adIds": {
+            "description": "Restrict ad-level insights to these ad IDs.",
+            "minItems": 1,
+            "maxItems": 100,
             "type": "array",
             "items": {
               "type": "string",
               "pattern": "^\\d+$"
-            },
-            "minItems": 1,
-            "maxItems": 100,
-            "description": "Restrict ad-level insights to these ad IDs."
+            }
           },
           "campaignIds": {
+            "description": "Restrict campaign-, adset- or ad-level insights to these campaign IDs.",
+            "minItems": 1,
+            "maxItems": 100,
             "type": "array",
             "items": {
               "type": "string",
               "pattern": "^\\d+$"
-            },
-            "minItems": 1,
-            "maxItems": 100,
-            "description": "Restrict campaign-, adset- or ad-level insights to these campaign IDs."
+            }
           },
           "attributionMode": {
+            "description": "Use Meta account settings, ad-set settings, or explicitly supplied windows. No setting is inferred from returned numbers.",
+            "default": "account",
             "type": "string",
             "enum": [
               "account",
               "adset",
               "explicit"
-            ],
-            "default": "account",
-            "description": "Use Meta account settings, ad-set settings, or explicitly supplied windows. No setting is inferred from returned numbers."
+            ]
           },
           "attributionWindows": {
+            "description": "Only with attributionMode explicit. These windows are sent identically to every split query and account total.",
+            "minItems": 1,
+            "maxItems": 5,
             "type": "array",
             "items": {
               "type": "string",
@@ -1928,32 +1914,29 @@
                 "1d_view",
                 "1d_ev"
               ]
-            },
-            "minItems": 1,
-            "maxItems": 5,
-            "description": "Only with attributionMode explicit. These windows are sent identically to every split query and account total."
+            }
           },
           "actionReportTime": {
+            "description": "Date basis for actions, sent explicitly to Meta.",
+            "default": "impression",
             "type": "string",
             "enum": [
               "impression",
               "conversion",
               "mixed"
-            ],
-            "default": "impression",
-            "description": "Date basis for actions, sent explicitly to Meta."
+            ]
           },
           "includeAccountTotals": {
-            "type": "boolean",
+            "description": "Also read native account-level totals with the same dates, metrics and attribution. Requires no entity filter, dimension or breakdown.",
             "default": false,
-            "description": "Also read native account-level totals with the same dates, metrics and attribution. Requires no entity filter, dimension or breakdown."
+            "type": "boolean"
           },
           "limit": {
+            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results.",
+            "default": 500,
             "type": "integer",
             "minimum": 1,
-            "maximum": 5000,
-            "default": 500,
-            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results."
+            "maximum": 5000
           }
         },
         "required": [
@@ -1961,7 +1944,6 @@
           "level",
           "metrics"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -1972,7 +1954,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -1997,8 +1979,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -2022,14 +2004,13 @@
             "description": "Ad account ID (e.g., act_123456789)"
           },
           "campaignId": {
-            "type": "string",
-            "description": "Get structure for a specific campaign only"
+            "description": "Get structure for a specific campaign only",
+            "type": "string"
           }
         },
         "required": [
           "adAccountId"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -2040,7 +2021,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -2065,8 +2046,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -2090,24 +2071,23 @@
             "description": "Ad account ID (e.g., act_123456789)"
           },
           "adIds": {
+            "description": "Specific ad IDs to get creatives for",
             "type": "array",
             "items": {
               "type": "string"
-            },
-            "description": "Specific ad IDs to get creatives for"
+            }
           },
           "limit": {
+            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results.",
+            "default": 100,
             "type": "integer",
             "minimum": 1,
-            "maximum": 500,
-            "default": 100,
-            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results."
+            "maximum": 500
           }
         },
         "required": [
           "adAccountId"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -2118,7 +2098,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -2143,8 +2123,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -2168,26 +2148,25 @@
             "description": "Ad account ID (e.g., act_123456789)"
           },
           "type": {
+            "description": "Filter by audience type",
             "type": "string",
             "enum": [
               "custom",
               "saved",
               "lookalike"
-            ],
-            "description": "Filter by audience type"
+            ]
           },
           "limit": {
+            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results.",
+            "default": 100,
             "type": "integer",
             "minimum": 1,
-            "maximum": 500,
-            "default": 100,
-            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results."
+            "maximum": 500
           }
         },
         "required": [
           "adAccountId"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -2198,7 +2177,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -2223,8 +2202,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -2251,7 +2230,6 @@
         "required": [
           "adAccountId"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -2262,7 +2240,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -2287,8 +2265,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -2315,7 +2293,6 @@
         "required": [
           "studyId"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -2326,7 +2303,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -2351,8 +2328,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -2372,35 +2349,34 @@
         "type": "object",
         "properties": {
           "metrics": {
+            "minItems": 1,
             "type": "array",
             "items": {
               "type": "string"
             },
-            "minItems": 1,
             "description": "Metric keys to validate"
           },
           "breakdowns": {
+            "description": "Breakdown keys to validate",
             "type": "array",
             "items": {
               "type": "string"
-            },
-            "description": "Breakdown keys to validate"
+            }
           },
           "level": {
+            "description": "Aggregation level",
             "type": "string",
             "enum": [
               "account",
               "campaign",
               "adset",
               "ad"
-            ],
-            "description": "Aggregation level"
+            ]
           }
         },
         "required": [
           "metrics"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -2411,7 +2387,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -2436,8 +2412,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -2462,26 +2438,25 @@
             "description": "Facebook Page ID"
           },
           "postId": {
+            "description": "Exact PageID_PostID to read instead of the recent-post list; must belong to pageId.",
             "type": "string",
-            "pattern": "^\\d+_\\d+$",
-            "description": "Exact PageID_PostID to read instead of the recent-post list; must belong to pageId."
+            "pattern": "^\\d+_\\d+$"
           },
           "limit": {
+            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results.",
+            "default": 25,
             "type": "integer",
             "minimum": 1,
-            "maximum": 100,
-            "default": 25,
-            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results."
+            "maximum": 100
           },
           "cursor": {
-            "type": "string",
-            "description": "Pagination cursor from previous response"
+            "description": "Pagination cursor from previous response",
+            "type": "string"
           }
         },
         "required": [
           "pageId"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -2492,7 +2467,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -2517,8 +2492,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -2547,7 +2522,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -2572,8 +2547,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -2610,25 +2585,25 @@
             "description": "Name substring to search for"
           },
           "statusFilter": {
+            "description": "Filter by native effective_status, not configured status. PAUSED excludes IN_PROCESS, CAMPAIGN_PAUSED and ADSET_PAUSED. Omit for post-creation verification and inspect both returned status fields.",
             "type": "string",
             "enum": [
               "ACTIVE",
               "PAUSED",
               "DELETED",
               "ARCHIVED"
-            ],
-            "description": "Filter by native effective_status, not configured status. PAUSED excludes IN_PROCESS, CAMPAIGN_PAUSED and ADSET_PAUSED. Omit for post-creation verification and inspect both returned status fields."
+            ]
           },
           "limit": {
+            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results.",
+            "default": 100,
             "type": "integer",
             "minimum": 1,
-            "maximum": 500,
-            "default": 100,
-            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results."
+            "maximum": 500
           },
           "cursor": {
-            "type": "string",
-            "description": "Pagination cursor from previous response"
+            "description": "Pagination cursor from previous response",
+            "type": "string"
           }
         },
         "required": [
@@ -2636,7 +2611,6 @@
           "entityType",
           "nameFilter"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -2647,7 +2621,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -2672,8 +2646,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -2700,6 +2674,8 @@
             "description": "Graph node ID, for example a campaign, ad set, ad, creative, Page, IG account, pixel, audience, or catalog ID"
           },
           "fields": {
+            "minItems": 1,
+            "maxItems": 100,
             "type": "array",
             "items": {
               "type": "string",
@@ -2707,21 +2683,18 @@
               "maxLength": 100,
               "pattern": "^[A-Za-z][A-Za-z0-9_]*$"
             },
-            "minItems": 1,
-            "maxItems": 100,
             "description": "Flat Graph field names; nested field expansion is intentionally disabled"
           },
           "includeMetadata": {
-            "type": "boolean",
+            "description": "Ask Graph for field metadata when supported",
             "default": false,
-            "description": "Ask Graph for field metadata when supported"
+            "type": "boolean"
           }
         },
         "required": [
           "nodeId",
           "fields"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -2732,7 +2705,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -2757,8 +2730,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -2838,18 +2811,20 @@
             "description": "Allowlisted Meta Graph edge to read on the selected node."
           },
           "fields": {
+            "description": "Native provider fields to return. Select only fields supported by the chosen object or report.",
+            "minItems": 1,
+            "maxItems": 100,
             "type": "array",
             "items": {
               "type": "string",
               "minLength": 1,
               "maxLength": 100,
               "pattern": "^[A-Za-z][A-Za-z0-9_]*$"
-            },
-            "minItems": 1,
-            "maxItems": 100,
-            "description": "Native provider fields to return. Select only fields supported by the chosen object or report."
+            }
           },
           "filtering": {
+            "description": "Native provider filter expressions; credentials and account overrides are not allowed.",
+            "maxItems": 20,
             "type": "array",
             "items": {
               "type": "object",
@@ -2895,6 +2870,7 @@
                       "type": "boolean"
                     },
                     {
+                      "maxItems": 500,
                       "type": "array",
                       "items": {
                         "anyOf": [
@@ -2909,8 +2885,7 @@
                             "type": "boolean"
                           }
                         ]
-                      },
-                      "maxItems": 500
+                      }
                     }
                   ]
                 }
@@ -2919,54 +2894,54 @@
                 "field",
                 "operator",
                 "value"
-              ],
-              "additionalProperties": false
-            },
-            "maxItems": 20,
-            "description": "Native provider filter expressions; credentials and account overrides are not allowed."
+              ]
+            }
           },
           "parameters": {
+            "description": "Additional documented GET parameters, for example targeting_spec or optimization_goal; auth and HTTP method override parameters are blocked",
             "type": "object",
-            "additionalProperties": {},
-            "description": "Additional documented GET parameters, for example targeting_spec or optimization_goal; auth and HTTP method override parameters are blocked"
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
           },
           "since": {
+            "description": "Beginning of the requested reporting period; use the format accepted by the provider.",
             "type": "string",
-            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
-            "description": "Beginning of the requested reporting period; use the format accepted by the provider."
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
           },
           "until": {
-            "$ref": "#/properties/since",
-            "description": "End of the requested reporting period; use the format accepted by the provider."
+            "description": "End of the requested reporting period; use the format accepted by the provider.",
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
           },
           "limit": {
+            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results.",
+            "default": 100,
             "type": "integer",
             "minimum": 1,
-            "maximum": 500,
-            "default": 100,
-            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results."
+            "maximum": 500
           },
           "after": {
+            "description": "Opaque cursor for the next page returned by Meta.",
             "type": "string",
-            "maxLength": 2000,
-            "description": "Opaque cursor for the next page returned by Meta."
+            "maxLength": 2000
           },
           "before": {
+            "description": "Opaque cursor for the previous page returned by Meta.",
             "type": "string",
-            "maxLength": 2000,
-            "description": "Opaque cursor for the previous page returned by Meta."
+            "maxLength": 2000
           },
           "includeSummary": {
-            "type": "boolean",
+            "description": "Request the provider's available summary or total-count metadata.",
             "default": false,
-            "description": "Request the provider's available summary or total-count metadata."
+            "type": "boolean"
           }
         },
         "required": [
           "parentId",
           "edge"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -2977,7 +2952,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -3002,8 +2977,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -3030,6 +3005,8 @@
             "description": "Ad account (act_...), campaign, ad set, or ad ID whose /insights edge should be queried"
           },
           "fields": {
+            "minItems": 1,
+            "maxItems": 100,
             "type": "array",
             "items": {
               "type": "string",
@@ -3037,37 +3014,43 @@
               "maxLength": 100,
               "pattern": "^[A-Za-z][A-Za-z0-9_]*$"
             },
-            "minItems": 1,
-            "maxItems": 100,
             "description": "Native Meta Insights API fields; calculated aliases are not accepted here"
           },
           "level": {
+            "description": "Entity or aggregation level for the requested report.",
             "type": "string",
             "enum": [
               "account",
               "campaign",
               "adset",
               "ad"
-            ],
-            "description": "Entity or aggregation level for the requested report."
+            ]
           },
           "breakdowns": {
+            "description": "Native reporting breakdowns. Check compatibility before combining them.",
+            "maxItems": 20,
             "type": "array",
             "items": {
-              "$ref": "#/properties/fields/items"
-            },
-            "maxItems": 20,
-            "description": "Native reporting breakdowns. Check compatibility before combining them."
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "pattern": "^[A-Za-z][A-Za-z0-9_]*$"
+            }
           },
           "actionBreakdowns": {
+            "description": "Meta action-level breakdowns, subject to Insights compatibility rules.",
+            "maxItems": 20,
             "type": "array",
             "items": {
-              "$ref": "#/properties/fields/items"
-            },
-            "maxItems": 20,
-            "description": "Meta action-level breakdowns, subject to Insights compatibility rules."
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "pattern": "^[A-Za-z][A-Za-z0-9_]*$"
+            }
           },
           "actionAttributionWindows": {
+            "description": "Meta attribution windows used to attribute action metrics.",
+            "maxItems": 8,
             "type": "array",
             "items": {
               "type": "string",
@@ -3081,11 +3064,10 @@
                 "skan_click",
                 "skan_view"
               ]
-            },
-            "maxItems": 8,
-            "description": "Meta attribution windows used to attribute action metrics."
+            }
           },
           "datePreset": {
+            "description": "Named reporting period. Use the custom date range when you need exact start and end dates.",
             "type": "string",
             "enum": [
               "today",
@@ -3108,10 +3090,10 @@
               "this_week_mon_today",
               "this_week_sun_today",
               "this_year"
-            ],
-            "description": "Named reporting period. Use the custom date range when you need exact start and end dates."
+            ]
           },
           "timeRange": {
+            "description": "Explicit provider reporting period with since and until dates.",
             "type": "object",
             "properties": {
               "since": {
@@ -3119,17 +3101,17 @@
                 "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
               },
               "until": {
-                "$ref": "#/properties/timeRange/properties/since"
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
               }
             },
             "required": [
               "since",
               "until"
-            ],
-            "additionalProperties": false,
-            "description": "Explicit provider reporting period with since and until dates."
+            ]
           },
           "timeIncrement": {
+            "description": "Provider time-bucket size or supported aggregate value.",
             "anyOf": [
               {
                 "type": "integer",
@@ -3143,10 +3125,11 @@
                   "all_days"
                 ]
               }
-            ],
-            "description": "Provider time-bucket size or supported aggregate value."
+            ]
           },
           "filtering": {
+            "description": "Native provider filter expressions; credentials and account overrides are not allowed.",
+            "maxItems": 20,
             "type": "array",
             "items": {
               "type": "object",
@@ -3192,6 +3175,7 @@
                       "type": "boolean"
                     },
                     {
+                      "maxItems": 500,
                       "type": "array",
                       "items": {
                         "anyOf": [
@@ -3206,8 +3190,7 @@
                             "type": "boolean"
                           }
                         ]
-                      },
-                      "maxItems": 500
+                      }
                     }
                   ]
                 }
@@ -3216,41 +3199,37 @@
                 "field",
                 "operator",
                 "value"
-              ],
-              "additionalProperties": false
-            },
-            "maxItems": 20,
-            "description": "Native provider filter expressions; credentials and account overrides are not allowed."
+              ]
+            }
           },
           "sort": {
+            "description": "Native provider ordering expressions.",
             "type": "string",
             "maxLength": 150,
-            "pattern": "^[A-Za-z][A-Za-z0-9_.]*_(ascending|descending)$",
-            "description": "Native provider ordering expressions."
+            "pattern": "^[A-Za-z][A-Za-z0-9_.]*_(ascending|descending)$"
           },
           "limit": {
+            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results.",
+            "default": 100,
             "type": "integer",
             "minimum": 1,
-            "maximum": 500,
-            "default": 100,
-            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results."
+            "maximum": 500
           },
           "after": {
+            "description": "Opaque cursor for the next page returned by Meta.",
             "type": "string",
-            "maxLength": 2000,
-            "description": "Opaque cursor for the next page returned by Meta."
+            "maxLength": 2000
           },
           "includeSummary": {
-            "type": "boolean",
+            "description": "Request the provider's available summary or total-count metadata.",
             "default": false,
-            "description": "Request the provider's available summary or total-count metadata."
+            "type": "boolean"
           }
         },
         "required": [
           "objectId",
           "fields"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -3261,7 +3240,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -3286,8 +3265,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -3330,18 +3309,20 @@
             "description": "Provider object or operation type selected from this schema's allowed values."
           },
           "query": {
+            "description": "Search text; required by most interest and geography searches",
             "type": "string",
             "minLength": 1,
-            "maxLength": 200,
-            "description": "Search text; required by most interest and geography searches"
+            "maxLength": 200
           },
           "countryCode": {
+            "description": "Country code used to localize keyword or targeting results.",
             "type": "string",
             "minLength": 2,
-            "maxLength": 2,
-            "description": "Country code used to localize keyword or targeting results."
+            "maxLength": 2
           },
           "locationTypes": {
+            "description": "Location dictionary categories to include in targeting search.",
+            "maxItems": 7,
             "type": "array",
             "items": {
               "type": "string",
@@ -3354,22 +3335,19 @@
                 "geo_market",
                 "electoral_district"
               ]
-            },
-            "maxItems": 7,
-            "description": "Location dictionary categories to include in targeting search."
+            }
           },
           "limit": {
+            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results.",
+            "default": 100,
             "type": "integer",
             "minimum": 1,
-            "maximum": 1000,
-            "default": 100,
-            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results."
+            "maximum": 1000
           }
         },
         "required": [
           "type"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -3380,7 +3358,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -3405,8 +3383,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -3433,18 +3411,17 @@
             "description": "Exact ad ID in the selected advertising account."
           },
           "adFormat": {
+            "description": "Native Meta ad preview format; must be compatible with this ad's creative.",
+            "default": "DESKTOP_FEED_STANDARD",
             "type": "string",
             "minLength": 1,
             "maxLength": 100,
-            "pattern": "^[A-Z][A-Z0-9_]*$",
-            "default": "DESKTOP_FEED_STANDARD",
-            "description": "Native Meta ad preview format; must be compatible with this ad's creative."
+            "pattern": "^[A-Z][A-Z0-9_]*$"
           }
         },
         "required": [
           "adId"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -3455,7 +3432,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -3480,8 +3457,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -3505,47 +3482,48 @@
             "description": "Ad account ID (e.g., act_123456789)"
           },
           "nameFilter": {
-            "type": "string",
-            "description": "Only images whose file name matches this value"
+            "description": "Only images whose file name matches this value",
+            "type": "string"
           },
           "hashes": {
+            "description": "Only these image hashes (exact match)",
             "type": "array",
             "items": {
               "type": "string"
-            },
-            "description": "Only these image hashes (exact match)"
+            }
           },
           "minWidth": {
+            "description": "Only images at least this wide, in pixels",
             "type": "integer",
             "minimum": 1,
-            "description": "Only images at least this wide, in pixels"
+            "maximum": 9007199254740991
           },
           "minHeight": {
+            "description": "Only images at least this tall, in pixels",
             "type": "integer",
             "minimum": 1,
-            "description": "Only images at least this tall, in pixels"
+            "maximum": 9007199254740991
           },
           "includeUsage": {
-            "type": "boolean",
+            "description": "Also return the creative IDs using each image",
             "default": false,
-            "description": "Also return the creative IDs using each image"
+            "type": "boolean"
           },
           "limit": {
+            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results.",
+            "default": 100,
             "type": "integer",
             "minimum": 1,
-            "maximum": 500,
-            "default": 100,
-            "description": "Maximum number of returned items or rows. The declared bounds and default apply; use pagination for additional results."
+            "maximum": 500
           },
           "cursor": {
-            "type": "string",
-            "description": "Pagination cursor from previous response"
+            "description": "Pagination cursor from previous response",
+            "type": "string"
           }
         },
         "required": [
           "adAccountId"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -3556,7 +3534,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -3581,8 +3559,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -3606,40 +3584,39 @@
             "description": "Ad account ID (e.g., act_123456789)"
           },
           "titleFilter": {
-            "type": "string",
-            "description": "Only videos whose title contains this value"
+            "description": "Only videos whose title contains this value",
+            "type": "string"
           },
           "minLengthSeconds": {
+            "description": "Only videos at least this many seconds long",
             "type": "number",
-            "minimum": 0,
-            "description": "Only videos at least this many seconds long"
+            "minimum": 0
           },
           "maxLengthSeconds": {
+            "description": "Only videos at most this many seconds long",
             "type": "number",
-            "minimum": 1,
-            "description": "Only videos at most this many seconds long"
+            "minimum": 1
           },
           "includeSource": {
-            "type": "boolean",
+            "description": "Also return the short-lived raw video file URL for each video",
             "default": false,
-            "description": "Also return the short-lived raw video file URL for each video"
+            "type": "boolean"
           },
           "limit": {
+            "description": "Videos per page (thumbnail payloads are heavy, keep this modest)",
+            "default": 25,
             "type": "integer",
             "minimum": 1,
-            "maximum": 200,
-            "default": 25,
-            "description": "Videos per page (thumbnail payloads are heavy, keep this modest)"
+            "maximum": 200
           },
           "cursor": {
-            "type": "string",
-            "description": "Pagination cursor from previous response"
+            "description": "Pagination cursor from previous response",
+            "type": "string"
           }
         },
         "required": [
           "adAccountId"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -3650,7 +3627,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -3675,8 +3652,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -3700,25 +3677,24 @@
             "description": "Ad account that owns the videos, used for scoping and rate limits"
           },
           "videoIds": {
+            "minItems": 1,
+            "maxItems": 10,
             "type": "array",
             "items": {
               "type": "string"
             },
-            "minItems": 1,
-            "maxItems": 10,
             "description": "Video IDs to resolve (at most 10 per call, one Graph request each)"
           },
           "pageId": {
+            "description": "Owning Page ID from the ad creative. Allows Page-token fallback even when the user token cannot read the video node.",
             "type": "string",
-            "pattern": "^\\d+$",
-            "description": "Owning Page ID from the ad creative. Allows Page-token fallback even when the user token cannot read the video node."
+            "pattern": "^\\d+$"
           }
         },
         "required": [
           "adAccountId",
           "videoIds"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -3729,7 +3705,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -3754,8 +3730,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -3785,6 +3761,8 @@
             "description": "Exact entity ID saved in the acknowledged creation receipt."
           },
           "fields": {
+            "minItems": 1,
+            "maxItems": 40,
             "type": "array",
             "items": {
               "type": "string",
@@ -3827,8 +3805,6 @@
                 "omnichannel_link_spec"
               ]
             },
-            "minItems": 1,
-            "maxItems": 40,
             "description": "Exact fields to re-read from the reviewed native creation payload. IDs and account ownership are always checked."
           }
         },
@@ -3837,7 +3813,6 @@
           "entityId",
           "fields"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -3848,7 +3823,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -3873,8 +3848,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -3908,7 +3883,6 @@
           "adAccountId",
           "videoId"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -3919,7 +3893,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -3944,8 +3918,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -3979,7 +3953,6 @@
           "adAccountId",
           "adSetId"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -3990,7 +3963,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -4015,8 +3988,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -4044,7 +4017,6 @@
         "required": [
           "adAccountId"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -4055,7 +4027,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -4080,8 +4052,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -4122,7 +4094,6 @@
           "catalogId",
           "handle"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -4133,7 +4104,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -4158,8 +4129,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": true,
@@ -4202,6 +4173,7 @@
             "description": "objective"
           },
           "specialAdCategories": {
+            "description": "Required special categories; omit for none.",
             "type": "array",
             "items": {
               "type": "string",
@@ -4212,55 +4184,59 @@
                 "CREDIT",
                 "ISSUES_ELECTIONS_POLITICS"
               ]
-            },
-            "description": "Required special categories; omit for none."
+            }
           },
           "adsetBudgetSharing": {
-            "type": "boolean",
+            "description": "Explicit ad set budget sharing choice; only with ad set budgets.",
             "default": false,
-            "description": "Explicit ad set budget sharing choice; only with ad set budgets."
+            "type": "boolean"
           },
           "currency": {
+            "description": "Required with any monetary amount. Must match the actual account currency; never assume EUR.",
             "type": "string",
-            "pattern": "^[A-Z]{3}$",
-            "description": "Required with any monetary amount. Must match the actual account currency; never assume EUR."
+            "pattern": "^[A-Z]{3}$"
           },
           "dailyBudget": {
+            "description": "Daily budget in major account-currency units. Mutually exclusive with lifetimeBudget.",
             "type": "number",
             "exclusiveMinimum": 0,
-            "maximum": 1000000,
-            "description": "Daily budget in major account-currency units. Mutually exclusive with lifetimeBudget."
+            "maximum": 1000000
           },
           "lifetimeBudget": {
-            "$ref": "#/properties/dailyBudget",
-            "description": "Total lifetime budget in major account-currency units. Requires bounded ad set schedules; mutually exclusive with dailyBudget."
+            "description": "Total lifetime budget in major account-currency units. Requires bounded ad set schedules; mutually exclusive with dailyBudget.",
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 1000000
           },
           "bidStrategy": {
+            "description": "bidStrategy",
             "type": "string",
             "enum": [
               "LOWEST_COST_WITHOUT_CAP",
               "LOWEST_COST_WITH_BID_CAP",
               "COST_CAP",
               "LOWEST_COST_WITH_MIN_ROAS"
-            ],
-            "description": "bidStrategy"
+            ]
           },
           "startTime": {
+            "description": "Optional new start time as ISO 8601 with explicit UTC offset.",
             "type": "string",
             "format": "date-time",
-            "description": "Optional new start time as ISO 8601 with explicit UTC offset."
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
           },
           "endTime": {
-            "$ref": "#/properties/startTime",
-            "description": "Optional new end time as ISO 8601 with explicit UTC offset, after the start."
+            "description": "Optional new end time as ISO 8601 with explicit UTC offset, after the start.",
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
           },
           "confirm": {
-            "type": "boolean",
-            "description": "Apply only when true. Default is a local preview with no API mutation."
+            "description": "Apply only when true. Default is a local preview with no API mutation.",
+            "type": "boolean"
           },
           "validateOnly": {
-            "type": "boolean",
-            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm."
+            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm.",
+            "type": "boolean"
           }
         },
         "required": [
@@ -4268,7 +4244,6 @@
           "name",
           "objective"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -4279,7 +4254,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -4304,8 +4279,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": false,
@@ -4335,34 +4310,35 @@
             "description": "Numeric ID of the existing ad set in the selected account."
           },
           "currency": {
+            "description": "Required with any monetary amount. Must match the actual account currency; never assume EUR.",
             "type": "string",
-            "pattern": "^[A-Z]{3}$",
-            "description": "Required with any monetary amount. Must match the actual account currency; never assume EUR."
+            "pattern": "^[A-Z]{3}$"
           },
           "dailyBudget": {
+            "description": "Daily budget in major account-currency units. Mutually exclusive with lifetimeBudget.",
             "type": "number",
             "exclusiveMinimum": 0,
-            "maximum": 1000000,
-            "description": "Daily budget in major account-currency units. Mutually exclusive with lifetimeBudget."
+            "maximum": 1000000
           },
           "lifetimeBudget": {
-            "$ref": "#/properties/dailyBudget",
-            "description": "Total lifetime budget in major account-currency units. Requires bounded ad set schedules; mutually exclusive with dailyBudget."
+            "description": "Total lifetime budget in major account-currency units. Requires bounded ad set schedules; mutually exclusive with dailyBudget.",
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 1000000
           },
           "confirm": {
-            "type": "boolean",
-            "description": "Apply only when true. Default is a local preview with no API mutation."
+            "description": "Apply only when true. Default is a local preview with no API mutation.",
+            "type": "boolean"
           },
           "validateOnly": {
-            "type": "boolean",
-            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm."
+            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm.",
+            "type": "boolean"
           }
         },
         "required": [
           "adAccountId",
           "adSetId"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -4373,7 +4349,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -4398,8 +4374,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": false,
@@ -4429,28 +4405,30 @@
             "description": "Numeric ID of the existing ad set in the selected account."
           },
           "startTime": {
+            "description": "Optional new start time as ISO 8601 with explicit UTC offset.",
             "type": "string",
             "format": "date-time",
-            "description": "Optional new start time as ISO 8601 with explicit UTC offset."
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
           },
           "endTime": {
-            "$ref": "#/properties/startTime",
-            "description": "Optional new end time as ISO 8601 with explicit UTC offset, after the start."
+            "description": "Optional new end time as ISO 8601 with explicit UTC offset, after the start.",
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
           },
           "confirm": {
-            "type": "boolean",
-            "description": "Apply only when true. Default is a local preview with no API mutation."
+            "description": "Apply only when true. Default is a local preview with no API mutation.",
+            "type": "boolean"
           },
           "validateOnly": {
-            "type": "boolean",
-            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm."
+            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm.",
+            "type": "boolean"
           }
         },
         "required": [
           "adAccountId",
           "adSetId"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -4461,7 +4439,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -4486,8 +4464,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": false,
@@ -4517,34 +4495,35 @@
             "description": "Numeric ID of the parent campaign in the selected account. Its budget model and objective determine compatible ad set settings."
           },
           "currency": {
+            "description": "Required with any monetary amount. Must match the actual account currency; never assume EUR.",
             "type": "string",
-            "pattern": "^[A-Z]{3}$",
-            "description": "Required with any monetary amount. Must match the actual account currency; never assume EUR."
+            "pattern": "^[A-Z]{3}$"
           },
           "dailyBudget": {
+            "description": "Daily budget in major account-currency units. Mutually exclusive with lifetimeBudget.",
             "type": "number",
             "exclusiveMinimum": 0,
-            "maximum": 1000000,
-            "description": "Daily budget in major account-currency units. Mutually exclusive with lifetimeBudget."
+            "maximum": 1000000
           },
           "lifetimeBudget": {
-            "$ref": "#/properties/dailyBudget",
-            "description": "Total lifetime budget in major account-currency units. Requires bounded ad set schedules; mutually exclusive with dailyBudget."
+            "description": "Total lifetime budget in major account-currency units. Requires bounded ad set schedules; mutually exclusive with dailyBudget.",
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 1000000
           },
           "confirm": {
-            "type": "boolean",
-            "description": "Apply only when true. Default is a local preview with no API mutation."
+            "description": "Apply only when true. Default is a local preview with no API mutation.",
+            "type": "boolean"
           },
           "validateOnly": {
-            "type": "boolean",
-            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm."
+            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm.",
+            "type": "boolean"
           }
         },
         "required": [
           "adAccountId",
           "campaignId"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -4555,7 +4534,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -4580,8 +4559,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": false,
@@ -4628,13 +4607,20 @@
                 "minLength": 1
               },
               "targeting": {
+                "description": "Complete Meta targeting spec: geography, demographics, custom audiences, exclusions, placements and targeting_automation. Updates replace the entire targeting spec.",
                 "type": "object",
-                "additionalProperties": {},
-                "description": "Complete Meta targeting spec: geography, demographics, custom audiences, exclusions, placements and targeting_automation. Updates replace the entire targeting spec."
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
               },
               "promoted_object": {
-                "$ref": "#/properties/configuration/properties/targeting",
-                "description": "Native promoted object. Website and app (cross-channel) conversion: {omnichannel_object:{pixel:[{pixel_id,custom_event_type}],app:[{application_id,custom_event_type,object_store_urls:[...]}]}} with the same custom_event_type everywhere; app IDs and store URLs come from meta_get_promotable_apps. Ads in such an ad set need creative applink_treatment and pixel plus app tracking (meta_get_adset_configuration creativeRequirements)."
+                "description": "Native promoted object. Website and app (cross-channel) conversion: {omnichannel_object:{pixel:[{pixel_id,custom_event_type}],app:[{application_id,custom_event_type,object_store_urls:[...]}]}} with the same custom_event_type everywhere; app IDs and store URLs come from meta_get_promotable_apps. Ads in such an ad set need creative applink_treatment and pixel plus app tracking (meta_get_adset_configuration creativeRequirements).",
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
               },
               "destination_type": {
                 "type": "string"
@@ -4649,21 +4635,32 @@
                 ]
               },
               "bid_constraints": {
-                "$ref": "#/properties/configuration/properties/targeting"
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
               },
               "start_time": {
                 "type": "string",
-                "format": "date-time"
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
               },
               "end_time": {
-                "$ref": "#/properties/configuration/properties/start_time"
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
               },
               "attribution_spec": {
+                "maxItems": 10,
                 "type": "array",
                 "items": {
-                  "$ref": "#/properties/configuration/properties/targeting"
-                },
-                "maxItems": 10
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {}
+                }
               },
               "attribution_count_type": {
                 "type": "string"
@@ -4674,7 +4671,9 @@
                 "maxLength": 400
               },
               "dsa_payor": {
-                "$ref": "#/properties/configuration/properties/dsa_beneficiary"
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 400
               },
               "is_dynamic_creative": {
                 "type": "boolean"
@@ -4688,13 +4687,21 @@
               "adset_schedule": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/properties/configuration/properties/targeting"
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {}
                 }
               },
               "frequency_control_specs": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/properties/configuration/properties/targeting"
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {}
                 }
               },
               "optimization_sub_event": {
@@ -4708,31 +4715,35 @@
             "description": "Explicit native Meta ad set settings. First read meta_get_adset_configuration for edits. A supplied targeting object replaces the entire targeting spec."
           },
           "currency": {
+            "description": "Required with any monetary amount. Must match the actual account currency; never assume EUR.",
             "type": "string",
-            "pattern": "^[A-Z]{3}$",
-            "description": "Required with any monetary amount. Must match the actual account currency; never assume EUR."
+            "pattern": "^[A-Z]{3}$"
           },
           "dailyBudget": {
+            "description": "Daily budget in major account-currency units, e.g. 10 means EUR 10. Cannot be combined with lifetimeBudget or a campaign-owned budget.",
             "type": "number",
             "exclusiveMinimum": 0,
-            "maximum": 1000000,
-            "description": "Daily budget in major account-currency units, e.g. 10 means EUR 10. Cannot be combined with lifetimeBudget or a campaign-owned budget."
+            "maximum": 1000000
           },
           "lifetimeBudget": {
-            "$ref": "#/properties/dailyBudget",
-            "description": "Total lifetime budget in major account-currency units. Requires an end time; mutually exclusive with dailyBudget."
+            "description": "Total lifetime budget in major account-currency units. Requires an end time; mutually exclusive with dailyBudget.",
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 1000000
           },
           "bidAmount": {
-            "$ref": "#/properties/dailyBudget",
-            "description": "Bid amount in major account-currency units. Only use with a compatible capped bidding strategy."
+            "description": "Bid amount in major account-currency units. Only use with a compatible capped bidding strategy.",
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 1000000
           },
           "confirm": {
-            "type": "boolean",
-            "description": "Apply only when true. Default is a local preview with no API mutation."
+            "description": "Apply only when true. Default is a local preview with no API mutation.",
+            "type": "boolean"
           },
           "validateOnly": {
-            "type": "boolean",
-            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm."
+            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm.",
+            "type": "boolean"
           }
         },
         "required": [
@@ -4741,7 +4752,6 @@
           "name",
           "configuration"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -4752,7 +4762,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -4777,8 +4787,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": false,
@@ -4819,13 +4829,20 @@
                 "minLength": 1
               },
               "targeting": {
+                "description": "Complete Meta targeting spec: geography, demographics, custom audiences, exclusions, placements and targeting_automation. Updates replace the entire targeting spec.",
                 "type": "object",
-                "additionalProperties": {},
-                "description": "Complete Meta targeting spec: geography, demographics, custom audiences, exclusions, placements and targeting_automation. Updates replace the entire targeting spec."
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
               },
               "promoted_object": {
-                "$ref": "#/properties/configuration/properties/targeting",
-                "description": "Native promoted object. Website and app (cross-channel) conversion: {omnichannel_object:{pixel:[{pixel_id,custom_event_type}],app:[{application_id,custom_event_type,object_store_urls:[...]}]}} with the same custom_event_type everywhere; app IDs and store URLs come from meta_get_promotable_apps. Ads in such an ad set need creative applink_treatment and pixel plus app tracking (meta_get_adset_configuration creativeRequirements)."
+                "description": "Native promoted object. Website and app (cross-channel) conversion: {omnichannel_object:{pixel:[{pixel_id,custom_event_type}],app:[{application_id,custom_event_type,object_store_urls:[...]}]}} with the same custom_event_type everywhere; app IDs and store URLs come from meta_get_promotable_apps. Ads in such an ad set need creative applink_treatment and pixel plus app tracking (meta_get_adset_configuration creativeRequirements).",
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
               },
               "destination_type": {
                 "type": "string"
@@ -4840,21 +4857,32 @@
                 ]
               },
               "bid_constraints": {
-                "$ref": "#/properties/configuration/properties/targeting"
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
               },
               "start_time": {
                 "type": "string",
-                "format": "date-time"
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
               },
               "end_time": {
-                "$ref": "#/properties/configuration/properties/start_time"
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
               },
               "attribution_spec": {
+                "maxItems": 10,
                 "type": "array",
                 "items": {
-                  "$ref": "#/properties/configuration/properties/targeting"
-                },
-                "maxItems": 10
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {}
+                }
               },
               "attribution_count_type": {
                 "type": "string"
@@ -4865,7 +4893,9 @@
                 "maxLength": 400
               },
               "dsa_payor": {
-                "$ref": "#/properties/configuration/properties/dsa_beneficiary"
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 400
               },
               "is_dynamic_creative": {
                 "type": "boolean"
@@ -4879,13 +4909,21 @@
               "adset_schedule": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/properties/configuration/properties/targeting"
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {}
                 }
               },
               "frequency_control_specs": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/properties/configuration/properties/targeting"
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {}
                 }
               },
               "optimization_sub_event": {
@@ -4899,31 +4937,35 @@
             "description": "Explicit native Meta ad set settings. First read meta_get_adset_configuration for edits. A supplied targeting object replaces the entire targeting spec."
           },
           "currency": {
+            "description": "Required with any monetary amount. Must match the actual account currency; never assume EUR.",
             "type": "string",
-            "pattern": "^[A-Z]{3}$",
-            "description": "Required with any monetary amount. Must match the actual account currency; never assume EUR."
+            "pattern": "^[A-Z]{3}$"
           },
           "dailyBudget": {
+            "description": "Daily budget in major account-currency units, e.g. 10 means EUR 10. Cannot be combined with lifetimeBudget or a campaign-owned budget.",
             "type": "number",
             "exclusiveMinimum": 0,
-            "maximum": 1000000,
-            "description": "Daily budget in major account-currency units, e.g. 10 means EUR 10. Cannot be combined with lifetimeBudget or a campaign-owned budget."
+            "maximum": 1000000
           },
           "lifetimeBudget": {
-            "$ref": "#/properties/dailyBudget",
-            "description": "Total lifetime budget in major account-currency units. Requires an end time; mutually exclusive with dailyBudget."
+            "description": "Total lifetime budget in major account-currency units. Requires an end time; mutually exclusive with dailyBudget.",
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 1000000
           },
           "bidAmount": {
-            "$ref": "#/properties/dailyBudget",
-            "description": "Bid amount in major account-currency units. Only use with a compatible capped bidding strategy."
+            "description": "Bid amount in major account-currency units. Only use with a compatible capped bidding strategy.",
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 1000000
           },
           "confirm": {
-            "type": "boolean",
-            "description": "Apply only when true. Default is a local preview with no API mutation."
+            "description": "Apply only when true. Default is a local preview with no API mutation.",
+            "type": "boolean"
           },
           "validateOnly": {
-            "type": "boolean",
-            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm."
+            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm.",
+            "type": "boolean"
           }
         },
         "required": [
@@ -4931,7 +4973,6 @@
           "adSetId",
           "configuration"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -4942,7 +4983,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -4967,8 +5008,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": false,
@@ -4998,33 +5039,35 @@
             "description": "Numeric ID of the existing ad set in the selected account."
           },
           "campaignId": {
+            "description": "Numeric ID of the parent campaign in the selected account. Its budget model and objective determine compatible ad set settings.",
             "type": "string",
-            "pattern": "^\\d+$",
-            "description": "Numeric ID of the parent campaign in the selected account. Its budget model and objective determine compatible ad set settings."
+            "pattern": "^\\d+$"
           },
           "startTime": {
+            "description": "Optional new start time as ISO 8601 with explicit UTC offset.",
             "type": "string",
             "format": "date-time",
-            "description": "Optional new start time as ISO 8601 with explicit UTC offset."
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
           },
           "endTime": {
-            "$ref": "#/properties/startTime",
-            "description": "Optional new end time as ISO 8601 with explicit UTC offset, after the start."
+            "description": "Optional new end time as ISO 8601 with explicit UTC offset, after the start.",
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
           },
           "confirm": {
-            "type": "boolean",
-            "description": "Apply only when true. Default is a local preview with no API mutation."
+            "description": "Apply only when true. Default is a local preview with no API mutation.",
+            "type": "boolean"
           },
           "validateOnly": {
-            "type": "boolean",
-            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm."
+            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm.",
+            "type": "boolean"
           }
         },
         "required": [
           "adAccountId",
           "adSetId"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -5035,7 +5078,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -5060,8 +5103,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": false,
@@ -5100,52 +5143,77 @@
               },
               "object_story_spec": {
                 "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
                 "additionalProperties": {}
               },
               "asset_feed_spec": {
-                "$ref": "#/properties/spec/properties/object_story_spec"
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
               },
               "instagram_user_id": {
                 "type": "string",
                 "pattern": "^\\d+$"
               },
               "product_set_id": {
-                "$ref": "#/properties/spec/properties/instagram_user_id"
+                "type": "string",
+                "pattern": "^\\d+$"
               },
               "degrees_of_freedom_spec": {
-                "$ref": "#/properties/spec/properties/object_story_spec"
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
               },
               "url_tags": {
                 "type": "string",
                 "maxLength": 4000
               },
               "contextual_multi_ads": {
-                "$ref": "#/properties/spec/properties/object_story_spec"
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
               },
               "dynamic_ad_voice": {
                 "type": "string"
               },
               "image_crops": {
-                "$ref": "#/properties/spec/properties/object_story_spec"
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
               },
               "template_url": {
                 "type": "string",
                 "format": "uri"
               },
               "template_url_spec": {
-                "$ref": "#/properties/spec/properties/object_story_spec"
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
               },
               "applink_treatment": {
+                "description": "Required when the ad set optimizes for website and app (promoted_object.omnichannel_object with app). Copy the value used by the ad set's existing ads (meta_get_adset_configuration creativeRequirements); deeplink_with_web_fallback opens the app when installed with a deep link, else the website. Advantage+ shopping campaigns do not support automatic.",
                 "type": "string",
                 "enum": [
                   "deeplink_with_web_fallback",
                   "deeplink_with_appstore_fallback",
                   "web_only",
                   "automatic"
-                ],
-                "description": "Required when the ad set optimizes for website and app (promoted_object.omnichannel_object with app). Copy the value used by the ad set's existing ads (meta_get_adset_configuration creativeRequirements); deeplink_with_web_fallback opens the app when installed with a deep link, else the website. Advantage+ shopping campaigns do not support automatic."
+                ]
               },
               "omnichannel_link_spec": {
+                "description": "Optional web and app destinations for a web and app ad: web.url equal to the creative link, app.application_id from the ad set promoted_object and per-platform deep links. Requires applink_treatment.",
                 "type": "object",
                 "properties": {
                   "web": {
@@ -5153,9 +5221,9 @@
                     "properties": {
                       "url": {
                         "type": "string",
-                        "format": "uri",
-                        "pattern": "^https\\:\\/\\/",
                         "maxLength": 2000,
+                        "format": "starts_with",
+                        "pattern": "^https:\\/\\/.*",
                         "description": "Website URL. Must equal the creative link (object_story_spec link_data.link)."
                       }
                     },
@@ -5191,13 +5259,49 @@
                             "additionalProperties": false
                           },
                           "ios": {
-                            "$ref": "#/properties/spec/properties/omnichannel_link_spec/properties/app/properties/platform_specs/properties/android"
+                            "type": "object",
+                            "properties": {
+                              "url": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 2000,
+                                "description": "App deep link opened on this platform."
+                              }
+                            },
+                            "required": [
+                              "url"
+                            ],
+                            "additionalProperties": false
                           },
                           "ipad": {
-                            "$ref": "#/properties/spec/properties/omnichannel_link_spec/properties/app/properties/platform_specs/properties/android"
+                            "type": "object",
+                            "properties": {
+                              "url": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 2000,
+                                "description": "App deep link opened on this platform."
+                              }
+                            },
+                            "required": [
+                              "url"
+                            ],
+                            "additionalProperties": false
                           },
                           "iphone": {
-                            "$ref": "#/properties/spec/properties/omnichannel_link_spec/properties/app/properties/platform_specs/properties/android"
+                            "type": "object",
+                            "properties": {
+                              "url": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 2000,
+                                "description": "App deep link opened on this platform."
+                              }
+                            },
+                            "required": [
+                              "url"
+                            ],
+                            "additionalProperties": false
                           }
                         },
                         "additionalProperties": false
@@ -5209,20 +5313,19 @@
                     "additionalProperties": false
                   }
                 },
-                "additionalProperties": false,
-                "description": "Optional web and app destinations for a web and app ad: web.url equal to the creative link, app.application_id from the ad set promoted_object and per-platform deep links. Requires applink_treatment."
+                "additionalProperties": false
               }
             },
             "additionalProperties": false,
             "description": "Native Meta creative specification: exactly one existing post ID or an object_story_spec with page_id. Put image/video/carousel content in that spec; asset_feed_spec is optional."
           },
           "confirm": {
-            "type": "boolean",
-            "description": "Apply only when true. Default is a local preview with no API mutation."
+            "description": "Apply only when true. Default is a local preview with no API mutation.",
+            "type": "boolean"
           },
           "validateOnly": {
-            "type": "boolean",
-            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm."
+            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm.",
+            "type": "boolean"
           }
         },
         "required": [
@@ -5230,7 +5333,6 @@
           "name",
           "spec"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -5241,7 +5343,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -5266,8 +5368,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": false,
@@ -5308,20 +5410,23 @@
             "description": "Exact business name to give this object. Do not derive it from an uploaded filename."
           },
           "trackingSpecs": {
+            "description": "Optional native Meta tracking specifications. Do not supply credentials.",
             "type": "array",
             "items": {
               "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
               "additionalProperties": {}
-            },
-            "description": "Optional native Meta tracking specifications. Do not supply credentials."
+            }
           },
           "confirm": {
-            "type": "boolean",
-            "description": "Apply only when true. Default is a local preview with no API mutation."
+            "description": "Apply only when true. Default is a local preview with no API mutation.",
+            "type": "boolean"
           },
           "validateOnly": {
-            "type": "boolean",
-            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm."
+            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm.",
+            "type": "boolean"
           }
         },
         "required": [
@@ -5330,7 +5435,6 @@
           "creativeId",
           "name"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -5341,7 +5445,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -5366,8 +5470,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": false,
@@ -5402,12 +5506,12 @@
             "description": "Numeric ID of an existing ad creative in the selected account; not an image hash or video ID."
           },
           "confirm": {
-            "type": "boolean",
-            "description": "Apply only when true. Default is a local preview with no API mutation."
+            "description": "Apply only when true. Default is a local preview with no API mutation.",
+            "type": "boolean"
           },
           "validateOnly": {
-            "type": "boolean",
-            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm."
+            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm.",
+            "type": "boolean"
           }
         },
         "required": [
@@ -5415,7 +5519,6 @@
           "adId",
           "creativeId"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -5426,7 +5529,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -5451,8 +5554,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": false,
@@ -5484,19 +5587,18 @@
             "description": "Base64 media bytes without a data-URL prefix. Maximum decoded size 5 MiB; omitted from preview output."
           },
           "confirm": {
-            "type": "boolean",
-            "description": "Apply only when true. Default is a local preview with no API mutation."
+            "description": "Apply only when true. Default is a local preview with no API mutation.",
+            "type": "boolean"
           },
           "validateOnly": {
-            "type": "boolean",
-            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm."
+            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm.",
+            "type": "boolean"
           }
         },
         "required": [
           "adAccountId",
           "bytesBase64"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -5507,7 +5609,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -5532,8 +5634,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": false,
@@ -5558,37 +5660,36 @@
             "description": "Selected owning ad account ID, with or without act_. Every referenced ad object must belong to it."
           },
           "fileUrl": {
+            "description": "Publicly reachable HTTPS video file URL. Must point to the media file, not a landing page or a logged-in player.",
             "type": "string",
-            "format": "uri",
-            "pattern": "^https\\:\\/\\/",
-            "description": "Publicly reachable HTTPS video file URL. Must point to the media file, not a landing page or a logged-in player."
+            "format": "starts_with",
+            "pattern": "^https:\\/\\/.*"
           },
           "bytesBase64": {
+            "description": "Base64 media bytes without a data-URL prefix. Maximum decoded size 5 MiB; omitted from preview output.",
             "type": "string",
             "minLength": 4,
             "maxLength": 7000000,
-            "pattern": "^[A-Za-z0-9+/]+={0,2}$",
-            "description": "Base64 media bytes without a data-URL prefix. Maximum decoded size 5 MiB; omitted from preview output."
+            "pattern": "^[A-Za-z0-9+/]+={0,2}$"
           },
           "title": {
+            "description": "Optional title for the uploaded video.",
             "type": "string",
             "minLength": 1,
-            "maxLength": 400,
-            "description": "Optional title for the uploaded video."
+            "maxLength": 400
           },
           "confirm": {
-            "type": "boolean",
-            "description": "Apply only when true. Default is a local preview with no API mutation."
+            "description": "Apply only when true. Default is a local preview with no API mutation.",
+            "type": "boolean"
           },
           "validateOnly": {
-            "type": "boolean",
-            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm."
+            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm.",
+            "type": "boolean"
           }
         },
         "required": [
           "adAccountId"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -5599,7 +5700,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -5624,8 +5725,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": false,
@@ -5666,50 +5767,58 @@
             "description": "Audience type. CUSTOM creates an empty customer-list container; WEBSITE and ENGAGEMENT require a rule; LOOKALIKE requires an origin and lookalikeSpec."
           },
           "description": {
+            "description": "Description of the audience purpose.",
             "type": "string",
-            "maxLength": 2000,
-            "description": "Description of the audience purpose."
+            "maxLength": 2000
           },
           "rule": {
+            "description": "Complete native Meta audience rule. Replaces the existing rule on update.",
             "type": "object",
-            "additionalProperties": {},
-            "description": "Complete native Meta audience rule. Replaces the existing rule on update."
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
           },
           "retentionDays": {
+            "description": "Audience retention in days, from 1 to 180; Meta enforces eligibility for the selected subtype.",
             "type": "integer",
             "minimum": 1,
-            "maximum": 180,
-            "description": "Audience retention in days, from 1 to 180; Meta enforces eligibility for the selected subtype."
+            "maximum": 180
           },
           "pixelId": {
+            "description": "Numeric ID of the pixel used by a website audience rule.",
             "type": "string",
-            "pattern": "^\\d+$",
-            "description": "Numeric ID of the pixel used by a website audience rule."
+            "pattern": "^\\d+$"
           },
           "originAudienceId": {
-            "$ref": "#/properties/pixelId",
-            "description": "Numeric ID of the source audience in this same ad account."
+            "description": "Numeric ID of the source audience in this same ad account.",
+            "type": "string",
+            "pattern": "^\\d+$"
           },
           "lookalikeSpec": {
-            "$ref": "#/properties/rule",
-            "description": "Native lookalike specification, including explicit geography and size. Subject to Meta eligibility."
+            "description": "Native lookalike specification, including explicit geography and size. Subject to Meta eligibility.",
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
           },
           "customerFileSource": {
+            "description": "Actual provenance of future customer-list data. Creating the container does not upload customer data.",
             "type": "string",
             "enum": [
               "USER_PROVIDED_ONLY",
               "PARTNER_PROVIDED_ONLY",
               "BOTH_USER_AND_PARTNER_PROVIDED"
-            ],
-            "description": "Actual provenance of future customer-list data. Creating the container does not upload customer data."
+            ]
           },
           "confirm": {
-            "type": "boolean",
-            "description": "Apply only when true. Default is a local preview with no API mutation."
+            "description": "Apply only when true. Default is a local preview with no API mutation.",
+            "type": "boolean"
           },
           "validateOnly": {
-            "type": "boolean",
-            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm."
+            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm.",
+            "type": "boolean"
           }
         },
         "required": [
@@ -5717,7 +5826,6 @@
           "name",
           "subtype"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -5728,7 +5836,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -5753,8 +5861,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": false,
@@ -5784,41 +5892,43 @@
             "description": "Numeric ID of the existing custom audience in this selected ad account."
           },
           "name": {
+            "description": "Exact business name to give this object. Do not derive it from an uploaded filename.",
             "type": "string",
             "minLength": 1,
-            "maxLength": 400,
-            "description": "Exact business name to give this object. Do not derive it from an uploaded filename."
+            "maxLength": 400
           },
           "description": {
+            "description": "Description of the audience purpose.",
             "type": "string",
-            "maxLength": 2000,
-            "description": "Description of the audience purpose."
+            "maxLength": 2000
           },
           "retentionDays": {
+            "description": "Audience retention in days, from 1 to 180; Meta enforces eligibility for the selected subtype.",
             "type": "integer",
             "minimum": 1,
-            "maximum": 180,
-            "description": "Audience retention in days, from 1 to 180; Meta enforces eligibility for the selected subtype."
+            "maximum": 180
           },
           "rule": {
+            "description": "Complete native Meta audience rule. Replaces the existing rule on update.",
             "type": "object",
-            "additionalProperties": {},
-            "description": "Complete native Meta audience rule. Replaces the existing rule on update."
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
           },
           "confirm": {
-            "type": "boolean",
-            "description": "Apply only when true. Default is a local preview with no API mutation."
+            "description": "Apply only when true. Default is a local preview with no API mutation.",
+            "type": "boolean"
           },
           "validateOnly": {
-            "type": "boolean",
-            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm."
+            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm.",
+            "type": "boolean"
           }
         },
         "required": [
           "adAccountId",
           "audienceId"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -5829,7 +5939,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -5854,8 +5964,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": false,
@@ -5892,16 +6002,19 @@
           },
           "filter": {
             "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
             "additionalProperties": {},
             "description": "Complete native product-set filter. Updates replace the existing filter."
           },
           "confirm": {
-            "type": "boolean",
-            "description": "Apply only when true. Default is a local preview with no API mutation."
+            "description": "Apply only when true. Default is a local preview with no API mutation.",
+            "type": "boolean"
           },
           "validateOnly": {
-            "type": "boolean",
-            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm."
+            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm.",
+            "type": "boolean"
           }
         },
         "required": [
@@ -5910,7 +6023,6 @@
           "name",
           "filter"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -5921,7 +6033,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -5946,8 +6058,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": false,
@@ -5982,23 +6094,26 @@
             "description": "Numeric product set ID belonging to catalogId."
           },
           "name": {
+            "description": "Exact business name to give this object. Do not derive it from an uploaded filename.",
             "type": "string",
             "minLength": 1,
-            "maxLength": 400,
-            "description": "Exact business name to give this object. Do not derive it from an uploaded filename."
+            "maxLength": 400
           },
           "filter": {
+            "description": "Complete native product-set filter. Updates replace the existing filter.",
             "type": "object",
-            "additionalProperties": {},
-            "description": "Complete native product-set filter. Updates replace the existing filter."
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
           },
           "confirm": {
-            "type": "boolean",
-            "description": "Apply only when true. Default is a local preview with no API mutation."
+            "description": "Apply only when true. Default is a local preview with no API mutation.",
+            "type": "boolean"
           },
           "validateOnly": {
-            "type": "boolean",
-            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm."
+            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm.",
+            "type": "boolean"
           }
         },
         "required": [
@@ -6006,7 +6121,6 @@
           "catalogId",
           "productSetId"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -6017,7 +6131,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -6042,8 +6156,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": false,
@@ -6073,6 +6187,8 @@
             "description": "Numeric catalog ID. Writes require the catalog and selected ad account to have the same owning Business."
           },
           "requests": {
+            "minItems": 1,
+            "maxItems": 50,
             "type": "array",
             "items": {
               "type": "object",
@@ -6091,6 +6207,9 @@
                 },
                 "data": {
                   "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
                   "additionalProperties": {}
                 }
               },
@@ -6101,17 +6220,15 @@
               ],
               "additionalProperties": false
             },
-            "minItems": 1,
-            "maxItems": 50,
             "description": "One to 50 product CREATE or UPDATE requests with retailer_id and native product data. No DELETE; inspect the asynchronous batch result."
           },
           "confirm": {
-            "type": "boolean",
-            "description": "Apply only when true. Default is a local preview with no API mutation."
+            "description": "Apply only when true. Default is a local preview with no API mutation.",
+            "type": "boolean"
           },
           "validateOnly": {
-            "type": "boolean",
-            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm."
+            "description": "Ask Meta to validate, without creating or changing an object. Mutually exclusive with confirm.",
+            "type": "boolean"
           }
         },
         "required": [
@@ -6119,7 +6236,6 @@
           "catalogId",
           "requests"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -6130,7 +6246,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -6155,8 +6271,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": false,
@@ -6192,8 +6308,8 @@
             "description": "ACTIVE reactivates, PAUSED stops delivery."
           },
           "confirm": {
-            "type": "boolean",
-            "description": "Set to true to actually apply the change. Without it, the tool only previews."
+            "description": "Set to true to actually apply the change. Without it, the tool only previews.",
+            "type": "boolean"
           }
         },
         "required": [
@@ -6201,7 +6317,6 @@
           "adAccountId",
           "status"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -6212,7 +6327,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -6237,8 +6352,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": false,
@@ -6274,8 +6389,8 @@
             "description": "ACTIVE reactivates, PAUSED stops delivery."
           },
           "confirm": {
-            "type": "boolean",
-            "description": "Set to true to actually apply the change. Without it, the tool only previews."
+            "description": "Set to true to actually apply the change. Without it, the tool only previews.",
+            "type": "boolean"
           }
         },
         "required": [
@@ -6283,7 +6398,6 @@
           "adAccountId",
           "status"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -6294,7 +6408,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -6319,8 +6433,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": false,
@@ -6356,8 +6470,8 @@
             "description": "ACTIVE reactivates, PAUSED stops delivery."
           },
           "confirm": {
-            "type": "boolean",
-            "description": "Set to true to actually apply the change. Without it, the tool only previews."
+            "description": "Set to true to actually apply the change. Without it, the tool only previews.",
+            "type": "boolean"
           }
         },
         "required": [
@@ -6365,7 +6479,6 @@
           "adAccountId",
           "status"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -6376,7 +6489,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -6401,8 +6514,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": false,
@@ -6436,8 +6549,8 @@
             "description": "New name. This is the only thing the call changes."
           },
           "confirm": {
-            "type": "boolean",
-            "description": "Set to true to actually apply the change. Without it, the tool only previews."
+            "description": "Set to true to actually apply the change. Without it, the tool only previews.",
+            "type": "boolean"
           }
         },
         "required": [
@@ -6445,7 +6558,6 @@
           "adAccountId",
           "name"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -6456,7 +6568,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -6481,8 +6593,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": false,
@@ -6516,8 +6628,8 @@
             "description": "New name. This is the only thing the call changes."
           },
           "confirm": {
-            "type": "boolean",
-            "description": "Set to true to actually apply the change. Without it, the tool only previews."
+            "description": "Set to true to actually apply the change. Without it, the tool only previews.",
+            "type": "boolean"
           }
         },
         "required": [
@@ -6525,7 +6637,6 @@
           "adAccountId",
           "name"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -6536,7 +6647,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -6561,8 +6672,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": false,
@@ -6596,8 +6707,8 @@
             "description": "New name. This is the only thing the call changes."
           },
           "confirm": {
-            "type": "boolean",
-            "description": "Set to true to actually apply the change. Without it, the tool only previews."
+            "description": "Set to true to actually apply the change. Without it, the tool only previews.",
+            "type": "boolean"
           }
         },
         "required": [
@@ -6605,7 +6716,6 @@
           "adAccountId",
           "name"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -6616,7 +6726,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -6641,8 +6751,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": false,
@@ -6672,15 +6782,14 @@
             "description": "New name. This is the only thing the call changes."
           },
           "confirm": {
-            "type": "boolean",
-            "description": "Set to true to actually apply the change. Without it, the tool only previews."
+            "description": "Set to true to actually apply the change. Without it, the tool only previews.",
+            "type": "boolean"
           }
         },
         "required": [
           "adAccountId",
           "name"
         ],
-        "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "outputSchema": {
@@ -6691,7 +6800,7 @@
               {
                 "type": "object",
                 "properties": {},
-                "additionalProperties": true
+                "additionalProperties": {}
               },
               {
                 "type": "array",
@@ -6716,8 +6825,8 @@
         "required": [
           "result"
         ],
-        "additionalProperties": false,
-        "$schema": "http://json-schema.org/draft-07/schema#"
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false
       },
       "annotations": {
         "readOnlyHint": false,

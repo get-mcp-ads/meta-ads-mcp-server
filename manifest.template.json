@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "meta-ads-mcp-server",
   "display_name": "Meta Ads by getmcpads",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "Meta Ads MCP server: 42 read tools, 24 opt-in preview-first writes.",
   "author": {
     "name": "getmcpads",

@@ -25,7 +25,7 @@ const statusFilterSchema = z
   .enum(["ACTIVE", "PAUSED", "DELETED", "ARCHIVED"])
   .optional()
   .describe("Filter by native effective_status, not configured status. PAUSED excludes IN_PROCESS, CAMPAIGN_PAUSED and ADSET_PAUSED. Omit for post-creation verification and inspect both returned status fields.");
-const limitSchema = z.number().int().min(1).max(500).optional().default(100);
+const limitSchema = z.number().int().min(1).max(500).prefault(100);
 const cursorSchema = z.string().optional().describe("Pagination cursor from previous response");
 const productBreakdownSchema = z.enum([
   "product_id",
@@ -1012,7 +1012,7 @@ export function registerMetaTools(server: McpServer, config: MetaConfig): void {
       limit: limitSchema,
       cursor: cursorSchema.describe("Legacy cursor for /me/businesses only. Use cursors for asset edges."),
       cursors: z.record(z.string(), z.string()).optional().describe("Per-edge cursors from paging/nextActions. Never reuse a cursor for another edge."),
-      maxPages: z.number().int().min(1).max(5).default(3).describe("Maximum pages per edge; remaining pages are reported explicitly."),
+      maxPages: z.number().int().min(1).max(5).prefault(3).describe("Maximum pages per edge; remaining pages are reported explicitly."),
     },
     async (args) => { try { return ok(await getBusinessAssets(client, args)); } catch(e) { return formatMcpToolError(e); } },
   );
@@ -1023,7 +1023,7 @@ export function registerMetaTools(server: McpServer, config: MetaConfig): void {
     "List accessible Facebook Pages with id, name, category, tasks, picture, and linked Instagram account references when available.",
     {
       businessId: z.string().optional().describe("Optional Business Manager ID to list owned/client pages. Omit to use /me/accounts."),
-      limit: z.number().int().min(1).max(200).optional().default(100),
+      limit: z.number().int().min(1).max(200).prefault(100),
       cursor: cursorSchema,
     },
     async ({ businessId, limit, cursor }) => {
@@ -1085,7 +1085,7 @@ export function registerMetaTools(server: McpServer, config: MetaConfig): void {
       adAccountId: adAccountIdSchema.optional().describe("Optional ad account ID for /instagram_accounts."),
       businessId: z.string().optional().describe("Optional Business Manager ID for owned/client Instagram account edges."),
       pageId: z.string().optional().describe("Optional Page ID to read linked instagram_business_account/connected_instagram_account."),
-      limit: z.number().int().min(1).max(200).optional().default(100),
+      limit: z.number().int().min(1).max(200).prefault(100),
       cursor: cursorSchema,
     },
     async ({ adAccountId, businessId, pageId, limit, cursor }) => {
@@ -1197,8 +1197,8 @@ export function registerMetaTools(server: McpServer, config: MetaConfig): void {
     {
       adAccountId: adAccountIdSchema.optional().describe("Ad account ID for /adspixels and offline conversion datasets."),
       businessId: z.string().optional().describe("Business Manager ID for owned/client pixels and datasets."),
-      includeDatasets: z.boolean().optional().default(true).describe("Also attempt dataset/offline conversion dataset edges."),
-      limit: z.number().int().min(1).max(200).optional().default(100),
+      includeDatasets: z.boolean().prefault(true).describe("Also attempt dataset/offline conversion dataset edges."),
+      limit: z.number().int().min(1).max(200).prefault(100),
       cursor: cursorSchema,
     },
     async ({ adAccountId, businessId, includeDatasets, limit, cursor }) => {
@@ -1332,7 +1332,7 @@ export function registerMetaTools(server: McpServer, config: MetaConfig): void {
       adAccountId: adAccountIdSchema,
       since: z.string().optional().describe("Optional start time accepted by Graph API, usually YYYY-MM-DD or Unix seconds."),
       until: z.string().optional().describe("Optional end time accepted by Graph API, usually YYYY-MM-DD or Unix seconds."),
-      limit: z.number().int().min(1).max(500).optional().default(100),
+      limit: z.number().int().min(1).max(500).prefault(100),
       cursor: cursorSchema,
     },
     async ({ adAccountId, since, until, limit, cursor }) => {
@@ -1374,11 +1374,11 @@ export function registerMetaTools(server: McpServer, config: MetaConfig): void {
     "Aggregate read-only delivery diagnostics across campaigns, ad sets, and ads using status/effective_status/issues_info where available plus simple delivery insights.",
     {
       adAccountId: adAccountIdSchema,
-      level: z.enum(["campaign", "adset", "ad", "all"]).optional().default("all"),
+      level: z.enum(["campaign", "adset", "ad", "all"]).prefault("all"),
       effectiveStatusFilter: z.array(z.string()).optional().describe("Optional effective_status filter values such as ACTIVE, PAUSED, WITH_ISSUES, DISAPPROVED."),
       datePreset: datePresetSchema.describe("Insights date preset for simple delivery metrics. Defaults to last_7d."),
       timeRange: timeRangeSchema.describe("Optional custom insights date range."),
-      limit: z.number().int().min(1).max(200).optional().default(100),
+      limit: z.number().int().min(1).max(200).prefault(100),
       cursor: cursorSchema,
     },
     async ({ adAccountId, level, effectiveStatusFilter, datePreset, timeRange, limit, cursor }) => {
@@ -1631,7 +1631,7 @@ export function registerMetaTools(server: McpServer, config: MetaConfig): void {
     {
       adAccountId: adAccountIdSchema.optional().describe("Ad account ID used when listing audiences."),
       audienceIds: z.array(z.string()).optional().describe("Specific audience IDs to fetch via batch IDs lookup."),
-      type: z.enum(["all", "custom", "saved", "lookalike"]).optional().default("all"),
+      type: z.enum(["all", "custom", "saved", "lookalike"]).prefault("all"),
       limit: limitSchema,
       cursor: cursorSchema,
     },
@@ -1778,9 +1778,9 @@ export function registerMetaTools(server: McpServer, config: MetaConfig): void {
       catalogId: z.string().optional().describe("Product Catalog ID to read directly."),
       productIds: z.array(z.string()).max(100).optional().describe("Specific Product Item IDs to fetch via the batch IDs endpoint."),
       search: z.string().optional().describe("Client-side substring filter across product id, retailer_id, name, brand, category, type, and custom labels."),
-      includeProducts: z.boolean().optional().default(true).describe("Fetch product items for discovered/provided catalogs."),
-      includeProductSets: z.boolean().optional().default(false).describe("Also attempt product_sets edges for catalog context."),
-      limit: z.number().int().min(1).max(500).optional().default(100),
+      includeProducts: z.boolean().prefault(true).describe("Fetch product items for discovered/provided catalogs."),
+      includeProductSets: z.boolean().prefault(false).describe("Also attempt product_sets edges for catalog context."),
+      limit: z.number().int().min(1).max(500).prefault(100),
       cursor: cursorSchema,
     },
     async ({ businessId, catalogId, productIds, search, includeProducts, includeProductSets, limit, cursor }) => {
@@ -1956,13 +1956,13 @@ export function registerMetaTools(server: McpServer, config: MetaConfig): void {
     {
       adAccountId: adAccountIdSchema,
       catalogId: z.string().optional().describe("Product Catalog ID used to load product metadata for joins."),
-      productBreakdown: productBreakdownSchema.optional().default("product_id"),
-      metrics: z.array(z.string()).min(1).optional().default(["impressions", "clicks", "spend", "actions", "action_values"]),
-      level: levelSchema.optional().default("ad"),
+      productBreakdown: productBreakdownSchema.prefault("product_id"),
+      metrics: z.array(z.string()).min(1).prefault(["impressions", "clicks", "spend", "actions", "action_values"]),
+      level: levelSchema.prefault("ad"),
       datePreset: datePresetSchema.describe("Insights date preset. Defaults to last_30d."),
       timeRange: timeRangeSchema.describe("Optional custom insights date range."),
-      limit: z.number().int().min(1).max(1000).optional().default(500),
-      catalogProductLimit: z.number().int().min(1).max(1000).optional().default(500),
+      limit: z.number().int().min(1).max(1000).prefault(500),
+      catalogProductLimit: z.number().int().min(1).max(1000).prefault(500),
     },
     async ({ adAccountId, catalogId, productBreakdown, metrics, level, datePreset, timeRange, limit, catalogProductLimit }) => {
       const warnings: MetaWarning[] = [];
@@ -2083,10 +2083,10 @@ export function registerMetaTools(server: McpServer, config: MetaConfig): void {
       adAccountId: adAccountIdSchema,
       businessId: z.string().optional().describe("Optional Business Manager ID for block-list discovery."),
       adsetIds: z.array(z.string()).max(100).optional().describe("Specific ad set IDs to inspect. If omitted, reads ad sets from the ad account."),
-      includeAdsets: z.boolean().optional().default(true),
-      includeBlockLists: z.boolean().optional().default(true),
-      includeRawTargeting: z.boolean().optional().default(false),
-      limit: z.number().int().min(1).max(500).optional().default(100),
+      includeAdsets: z.boolean().prefault(true),
+      includeBlockLists: z.boolean().prefault(true),
+      includeRawTargeting: z.boolean().prefault(false),
+      limit: z.number().int().min(1).max(500).prefault(100),
       cursor: cursorSchema,
     },
     async ({ adAccountId, businessId, adsetIds, includeAdsets, includeBlockLists, includeRawTargeting, limit, cursor }) => {
@@ -2214,9 +2214,9 @@ export function registerMetaTools(server: McpServer, config: MetaConfig): void {
     {
       studyId: z.string().optional().describe("Specific Ad Study ID to interpret."),
       adAccountId: adAccountIdSchema.optional().describe("Ad account ID used to discover ad_studies when studyId is omitted."),
-      includeCellEntities: z.boolean().optional().default(false).describe("Also read campaigns/adsets/adaccounts attached to each study cell."),
-      cellEntityType: z.enum(["campaigns", "adsets", "adaccounts"]).optional().default("campaigns"),
-      limit: z.number().int().min(1).max(100).optional().default(50),
+      includeCellEntities: z.boolean().prefault(false).describe("Also read campaigns/adsets/adaccounts attached to each study cell."),
+      cellEntityType: z.enum(["campaigns", "adsets", "adaccounts"]).prefault("campaigns"),
+      limit: z.number().int().min(1).max(100).prefault(50),
     },
     async ({ studyId, adAccountId, includeCellEntities, cellEntityType, limit }) => {
       const warnings: MetaWarning[] = [];
@@ -2381,10 +2381,10 @@ export function registerMetaTools(server: McpServer, config: MetaConfig): void {
       instagramAccountId: z.string().optional().describe("Instagram professional account ID for /media."),
       postIds: z.array(z.string()).max(50).optional().describe("Specific Facebook post IDs to enrich."),
       mediaIds: z.array(z.string()).max(50).optional().describe("Specific Instagram media IDs to enrich."),
-      includePagePosts: z.boolean().optional().default(true),
-      includeInstagramMedia: z.boolean().optional().default(true),
-      includeInsights: z.boolean().optional().default(false),
-      limit: z.number().int().min(1).max(100).optional().default(25),
+      includePagePosts: z.boolean().prefault(true),
+      includeInstagramMedia: z.boolean().prefault(true),
+      includeInsights: z.boolean().prefault(false),
+      limit: z.number().int().min(1).max(100).prefault(25),
       cursor: cursorSchema,
       since: z.string().optional().describe("Optional Graph time filter. For IG media this should be Unix seconds or strtotime-compatible text."),
       until: z.string().optional().describe("Optional Graph time filter. For IG media this should be Unix seconds or strtotime-compatible text."),
@@ -2688,11 +2688,11 @@ For purchases, leads or conversion analysis, request actions (and action_values 
       timeIncrement: z.union([z.literal(1), z.literal(7), z.literal(14), z.literal(28), z.literal(30), z.string()]).optional().describe("Time granularity: 1 (daily), 7 (weekly), 'monthly', or 'all_days'"),
       adIds: z.array(z.string().regex(/^\d+$/)).min(1).max(100).optional().describe("Restrict ad-level insights to these ad IDs."),
       campaignIds: z.array(z.string().regex(/^\d+$/)).min(1).max(100).optional().describe("Restrict campaign-, adset- or ad-level insights to these campaign IDs."),
-      attributionMode: z.enum(["account", "adset", "explicit"]).default("account").describe("Use Meta account settings, ad-set settings, or explicitly supplied windows. No setting is inferred from returned numbers."),
+      attributionMode: z.enum(["account", "adset", "explicit"]).prefault("account").describe("Use Meta account settings, ad-set settings, or explicitly supplied windows. No setting is inferred from returned numbers."),
       attributionWindows: z.array(z.enum(["1d_click", "7d_click", "28d_click", "1d_view", "1d_ev"])).min(1).max(5).optional().describe("Only with attributionMode explicit. These windows are sent identically to every split query and account total."),
-      actionReportTime: z.enum(["impression", "conversion", "mixed"]).default("impression").describe("Date basis for actions, sent explicitly to Meta."),
-      includeAccountTotals: z.boolean().default(false).describe("Also read native account-level totals with the same dates, metrics and attribution. Requires no entity filter, dimension or breakdown."),
-      limit: z.number().int().min(1).max(5000).optional().default(500),
+      actionReportTime: z.enum(["impression", "conversion", "mixed"]).prefault("impression").describe("Date basis for actions, sent explicitly to Meta."),
+      includeAccountTotals: z.boolean().prefault(false).describe("Also read native account-level totals with the same dates, metrics and attribution. Requires no entity filter, dimension or breakdown."),
+      limit: z.number().int().min(1).max(5000).prefault(500),
     },
     async ({ adAccountId, level, metrics, dimensions = [], breakdowns, actionBreakdowns, datePreset, timeRange, timeIncrement, adIds, adsetIds, campaignIds, effectiveStatus, limit, attributionMode = "account", attributionWindows, actionReportTime = "impression", includeAccountTotals = false }) => {
       try {
@@ -2988,7 +2988,7 @@ For purchases, leads or conversion analysis, request actions (and action_values 
     {
       pageId: z.string().regex(/^\d+$/).describe("Facebook Page ID"),
       postId: z.string().regex(/^\d+_\d+$/).optional().describe("Exact PageID_PostID to read instead of the recent-post list; must belong to pageId."),
-      limit: z.number().int().min(1).max(100).optional().default(25),
+      limit: z.number().int().min(1).max(100).prefault(25),
       cursor: cursorSchema,
     },
     async ({ pageId, postId, limit, cursor }) => {
@@ -3087,7 +3087,7 @@ For purchases, leads or conversion analysis, request actions (and action_values 
       hashes: z.array(z.string()).optional().describe("Only these image hashes (exact match)"),
       minWidth: z.number().int().min(1).optional().describe("Only images at least this wide, in pixels"),
       minHeight: z.number().int().min(1).optional().describe("Only images at least this tall, in pixels"),
-      includeUsage: z.boolean().optional().default(false).describe("Also return the creative IDs using each image"),
+      includeUsage: z.boolean().prefault(false).describe("Also return the creative IDs using each image"),
       limit: limitSchema,
       cursor: cursorSchema,
     },
@@ -3149,8 +3149,8 @@ For purchases, leads or conversion analysis, request actions (and action_values 
       titleFilter: z.string().optional().describe("Only videos whose title contains this value"),
       minLengthSeconds: z.number().min(0).optional().describe("Only videos at least this many seconds long"),
       maxLengthSeconds: z.number().min(1).optional().describe("Only videos at most this many seconds long"),
-      includeSource: z.boolean().optional().default(false).describe("Also return the short-lived raw video file URL for each video"),
-      limit: z.number().int().min(1).max(200).optional().default(25).describe("Videos per page (thumbnail payloads are heavy, keep this modest)"),
+      includeSource: z.boolean().prefault(false).describe("Also return the short-lived raw video file URL for each video"),
+      limit: z.number().int().min(1).max(200).prefault(25).describe("Videos per page (thumbnail payloads are heavy, keep this modest)"),
       cursor: cursorSchema,
     },
     async ({ adAccountId, titleFilter, minLengthSeconds, maxLengthSeconds, includeSource, limit, cursor }) => {
