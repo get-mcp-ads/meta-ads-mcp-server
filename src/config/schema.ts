@@ -13,7 +13,7 @@ const metaSchema = z.object({
 
 export const serverConfigSchema = z.object({
   meta: metaSchema.optional(),
-  logLevel: z.enum(["debug", "info", "warn", "error"]).default("info"),
+  logLevel: z.enum(["debug", "info", "warn", "error"]).prefault("info"),
 });
 
 export type ValidatedConfig = z.infer<typeof serverConfigSchema>;

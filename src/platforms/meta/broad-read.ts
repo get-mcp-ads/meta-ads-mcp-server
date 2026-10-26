@@ -177,7 +177,7 @@ export function registerMetaBroadReadTools(
     {
       nodeId: graphIdSchema.describe("Graph node ID, for example a campaign, ad set, ad, creative, Page, IG account, pixel, audience, or catalog ID"),
       fields: z.array(graphFieldSchema).min(1).max(100).describe("Flat Graph field names; nested field expansion is intentionally disabled"),
-      includeMetadata: z.boolean().optional().default(false).describe("Ask Graph for field metadata when supported"),
+      includeMetadata: z.boolean().prefault(false).describe("Ask Graph for field metadata when supported"),
     },
     async ({ nodeId, fields, includeMetadata }) => {
       try {
@@ -201,13 +201,13 @@ export function registerMetaBroadReadTools(
       edge: readEdgeSchema,
       fields: z.array(graphFieldSchema).min(1).max(100).optional(),
       filtering: z.array(graphFilterSchema).max(20).optional(),
-      parameters: z.record(z.unknown()).optional().describe("Additional documented GET parameters, for example targeting_spec or optimization_goal; auth and HTTP method override parameters are blocked"),
+      parameters: z.record(z.string(), z.unknown()).optional().describe("Additional documented GET parameters, for example targeting_spec or optimization_goal; auth and HTTP method override parameters are blocked"),
       since: dateSchema.optional(),
       until: dateSchema.optional(),
-      limit: z.number().int().min(1).max(500).optional().default(100),
+      limit: z.number().int().min(1).max(500).prefault(100),
       after: z.string().max(2_000).optional(),
       before: z.string().max(2_000).optional(),
-      includeSummary: z.boolean().optional().default(false),
+      includeSummary: z.boolean().prefault(false),
     },
     async ({ parentId, edge, fields, filtering, parameters, since, until, limit, after, before, includeSummary }) => {
       try {
@@ -247,9 +247,9 @@ export function registerMetaBroadReadTools(
       timeIncrement: z.union([z.number().int().min(1).max(90), z.enum(["monthly", "all_days"]) ]).optional(),
       filtering: z.array(graphFilterSchema).max(20).optional(),
       sort: z.string().trim().max(150).regex(/^[A-Za-z][A-Za-z0-9_.]*_(ascending|descending)$/).optional(),
-      limit: z.number().int().min(1).max(500).optional().default(100),
+      limit: z.number().int().min(1).max(500).prefault(100),
       after: z.string().max(2_000).optional(),
-      includeSummary: z.boolean().optional().default(false),
+      includeSummary: z.boolean().prefault(false),
     },
     async ({ objectId, fields, level, breakdowns, actionBreakdowns, actionAttributionWindows, datePreset, timeRange, timeIncrement, filtering, sort, limit, after, includeSummary }) => {
       try {
@@ -290,7 +290,7 @@ export function registerMetaBroadReadTools(
       query: z.string().trim().min(1).max(200).optional().describe("Search text; required by most interest and geography searches"),
       countryCode: z.string().trim().length(2).transform((value) => value.toUpperCase()).optional(),
       locationTypes: z.array(z.enum(["country", "country_group", "region", "city", "zip", "geo_market", "electoral_district"])).max(7).optional(),
-      limit: z.number().int().min(1).max(1000).optional().default(100),
+      limit: z.number().int().min(1).max(1000).prefault(100),
     },
     async ({ type, query, countryCode, locationTypes, limit }) => {
       try {
@@ -317,7 +317,7 @@ export function registerMetaBroadReadTools(
     "Get the read-only preview markup for an existing Meta ad in a requested placement format. The response may contain an iframe body but never creates or edits a creative.",
     {
       adId: graphIdSchema,
-      adFormat: z.string().trim().min(1).max(100).regex(/^[A-Z][A-Z0-9_]*$/).optional().default("DESKTOP_FEED_STANDARD"),
+      adFormat: z.string().trim().min(1).max(100).regex(/^[A-Z][A-Z0-9_]*$/).prefault("DESKTOP_FEED_STANDARD"),
     },
     async ({ adId, adFormat }) => {
       try {

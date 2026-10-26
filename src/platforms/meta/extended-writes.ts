@@ -43,7 +43,7 @@ const parameterDescriptions:Record<string,string>={
 };
 const id=z.string().regex(/^\d+$/,'Use a numeric Meta ID');
 const accountId=z.string().regex(/^(act_)?\d+$/);
-const json=z.record(z.unknown());
+const json=z.record(z.string(), z.unknown());
 const name=z.string().trim().min(1).max(400);
 const date=z.string().datetime({offset:true});
 const amount=z.number().positive().max(1_000_000);
@@ -363,7 +363,7 @@ export function registerMetaExtendedWrites(c:Collector,config:Record<string,stri
  register('meta_create_campaign','Create a PAUSED Meta campaign with either ad set budgets (omit campaign budget), a daily campaign budget, or a lifetime campaign budget. Supports native validate_only.',{
   name,objective:z.enum(['OUTCOME_TRAFFIC','OUTCOME_SALES','OUTCOME_LEADS','OUTCOME_AWARENESS','OUTCOME_ENGAGEMENT','OUTCOME_APP_PROMOTION']),
   specialAdCategories:z.array(z.enum(['NONE','HOUSING','EMPLOYMENT','CREDIT','ISSUES_ELECTIONS_POLITICS'])).optional().describe('Required special categories; omit for none.'),
-  adsetBudgetSharing:z.boolean().default(false).describe('Explicit ad set budget sharing choice; only with ad set budgets.'),
+  adsetBudgetSharing:z.boolean().prefault(false).describe('Explicit ad set budget sharing choice; only with ad set budgets.'),
   ...budgets,bidStrategy:adsetConfig.shape.bid_strategy,startTime:date.optional(),endTime:date.optional(),
  },a=>{
   const budget=budgetPayload(a);
