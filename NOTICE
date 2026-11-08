@@ -1,0 +1,17 @@
+meta-ads-mcp-server
+Copyright 2026 GetMCPAds
+
+This product includes software developed at GetMCPAds (https://www.getmcpads.com).
+
+An open-source Model Context Protocol server for the Facebook (Meta) Ads
+Marketing API. It is self-hosted and unaffiliated with Meta Platforms, Inc.
+
+GetMCPAds also runs a managed gateway that covers Facebook Ads alongside
+Google Ads, TikTok Ads, Pinterest Ads, GA4 and Search Console, with hosted
+OAuth and cross-platform reporting: https://www.getmcpads.com
+
+---
+
+Facebook, Meta, Instagram and the Meta Marketing API are trademarks of
+Meta Platforms, Inc. This project is not affiliated with, endorsed by, or
+sponsored by Meta Platforms, Inc.
